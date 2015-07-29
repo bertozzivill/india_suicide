@@ -1,8 +1,10 @@
 ####################################################################################################
-## Author: Laura Dwyer-Lindgren
-## Description: Prep a shapefile for the merged counties that are the unit of analysis for the
-##              small area risk factors work in the US.
-## Output: a spatialPolygonsDataFrame named 'map' where mcounty is the ID variable for each polygon.
+## Author: Amelia Bertozzi-Villa
+## Description: Prep a shapefile for India that removes Telangana (it wasn't a state for the years
+##    of our analysis), and create a dataset that maps from state name/id to 'merged' id
+## Output: a spatialPolygonsDataFrame named 'indis_map' where state_id is the ID variable for each
+##  polygon, and a data.table named 'loc' that maps state name to state_id (1-36 alphabetically, including
+## Telangana) and merged_id (1-35 alphabetically, except that Telangana=2)
 ####################################################################################################
 
 library(data.table)

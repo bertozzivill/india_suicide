@@ -76,6 +76,12 @@ for (name in files){
       print(image)
     }
     dev.off()
+    
+    #convert death counts for each classification to % of the whole state 
+    summed <- data[, list(deaths=sum(deaths)), by="state,state_id,year,classification,classification_label"]
+    summed[, summed_deaths:= sum(deaths), by="state,year"]
+    summed[, class_percent:= ifelse(summed_deaths==0, 0,deaths/summed_deaths)]
+    setkeyv(summed, c("year", "classification"))
   }
   
   

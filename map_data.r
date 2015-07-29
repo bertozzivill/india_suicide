@@ -24,7 +24,8 @@ india_map[, state_id := as.numeric(id)]
 
 load(paste0(shapefile_dir, "loc.rdata"))
 
-files <- c("causes")
+files <- c("causes", "means", "profession", "education")
+files <- c("profession", "education")
 
 for (name in files){
   print(name)
@@ -33,25 +34,54 @@ for (name in files){
   data <- merge(data, loc, by="state", all.x=T)
   data[is.na(deaths), deaths:=0] #set nulls in kerala in 2006 to zero, for now
   
-  #plot percent change in death counts from 2001 to 2010, by classification
-  summed <- data[year %in% c(2001,2010), list(deaths=sum(deaths)), by="state,state_id,year,classification"]
-  summed[, year:= paste0("year_", year)]
-  summed <- data.table(dcast(summed, 'state + state_id+classification ~ year', value.var="deaths"))
-  summed[, percent_change:=(year_2010-year_2001)/year_2010]
+  #TEST: remove lakshadweep
+  data <- data[state_id!=19]
   
-  #map all deaths in all years, as a for-example
-#   mapdata <- merge(summed, india_map, by="state_id", allow.cartesian=T)
-#   map_plot<- ggplot(mapdata) +
-#     geom_polygon(aes(x=long, y=lat, group=group, fill=deaths)) +
-#     geom_path(data=mapdata, aes(x=long, y=lat, group=group)) +
-#     scale_fill_gradientn(colours=brewer.pal(7, "Reds")) +
-#     scale_x_continuous("", breaks=NULL) +
-#     scale_y_continuous("", breaks=NULL) +
-#     coord_fixed(ratio=1) +
-#     guides(fill=guide_colourbar(title="Deaths:", barheight=20)) +
-#     labs(title = paste0("All Suicides")) +
-#     theme_bw(base_size=20)
+  #convert death counts for each classification to % of the whole state 
+  summed <- data[, list(deaths=sum(deaths)), by="state,state_id,year,classification,classification_label"]
+  summed[, summed_deaths:= sum(deaths), by="state,year"]
+  summed[, class_percent:= ifelse(summed_deaths==0, 0,deaths/summed_deaths)]
+  setkeyv(summed, c("year", "classification"))
+  
+  #DEATHS BY PERCENT:
+  for (class in unique(summed$classification)){
+    print(class)
+    for_extremes <- summed[classification==class]
+    class_label <- for_extremes$classification_label[[1]]
+    print(class_label)
+    newmin <- min(for_extremes$class_percent)-(mean(for_extremes$class_percent)/3)
+    newmax <- max(for_extremes$class_percent)+(mean(for_extremes$class_percent)/3)
+    minval <- ifelse(newmin<0, 0, newmin)
+    maxval <- ifelse(newmax>1, 1, newmax)
+    pdf(paste0(main_dir, "plots/", name, "/death_proportions_", class_label, ".pdf"), width=14, height=8)
+    print(paste0(main_dir, "plots/", name, "/death_proportions_", class_label, ".pdf"))
+    for (yearval in unique(summed$year)){
+      mapdata <- merge(summed[J(yearval, class)], india_map, by="state_id", allow.cartesian=T)
+      map_plot<- ggplot(mapdata) +
+        geom_polygon(aes(x=long, y=lat, group=group, fill=class_percent)) +
+        #geom_path(data=mapdata, aes(x=long, y=lat, group=group)) +
+        scale_fill_gradientn(colours=brewer.pal(7, "Reds"), limits=c(minval,maxval)) +
+        scale_x_continuous("", breaks=NULL) +
+        scale_y_continuous("", breaks=NULL) +
+        coord_fixed(ratio=1) +
+        guides(fill=guide_colourbar(title="", barheight=20)) +
+        labs(title = paste0("Proportion of Deaths Due to ", capitalize(name), ": ", class, ", ", yearval)) +
+        theme_bw(base_size=20)
+      
+      print(map_plot)
+    }
+    dev.off()
+  }
+  
+  
+  #con
+#   summed[, year:= paste0("year_", year)]
+#   summed <- data.table(dcast(summed, 'state + state_id+classification ~ year', value.var="deaths"))
+#   summed[, percent_change:=(year_2010-year_2001)/year_2001]
+#   summed[is.na(percent_change), percent_change:=0] #zeros in both years -> zero percent change
+#   summed[is.infinite(percent_change), percent_change:=NA] #zeros in first year -> missing percent change
 #   
-#   print(map_plot)
+  #map all deaths in all years, as a for-example
+
   
 }

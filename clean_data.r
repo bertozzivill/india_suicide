@@ -30,7 +30,7 @@ rm(list=ls())
 main_dir <- "C:/Users/abertozz/Desktop/practicum/suicide/data/"
 
 files <- c("causes", "education", "means", "profession", "social_status")
-shared_colnames <- c("state", "state_code", "year", "ID", "category", "category_title", "classification")
+shared_colnames <- c("state", "state_code", "year", "ID", "category_label", "category", "classification_label", "classification")
 
 alldata <- lapply(files, function(name){
   print(name)
@@ -44,7 +44,7 @@ alldata <- lapply(files, function(name){
   if (name %in% c("education", "social_status")){
     import <- melt(import, id.vars=c(shared_colnames), variable.name="sex", value.name="deaths")
     import <- import[sex!="total"]
-    setcolorder(import, c(1,2,3,4,8,5,6,7,9))
+    setcolorder(import, c(1,2,3,4,9,5,6,7,8,10))
   }else{
     #reshape age/sex long
     import <- melt(import, id.vars=c(shared_colnames), variable.name="agesex", value.name="deaths")
@@ -60,12 +60,12 @@ alldata <- lapply(files, function(name){
     import[, age:= ifelse(substr(age, 1,2)=="up", 0, as.numeric(substr(age, 1,2)))]
     import$agesex <-NULL
     #order columns better
-    setcolorder(import, c(1,2,3,4,9,10,5,6,7,8))
+    setcolorder(import, c(1,2,3,4,10,11,5,6,7,8,9))
   }
   import[, sex:= ifelse(sex=="male", 1, 2)]
   if (name %in% c("education", "social_status")) import <-import[order(state, year, sex, category)] else import<-import[order(state, year, sex, age, category)]
   total <- import[category=="total"]
-  if (name != "social_status") import <- import[category!="total"]
+  if (name != "social_status") import <- import[category_label!="total"]
   data <- copy(import)
   data$state_code<-NULL; data$ID<-NULL;
   save(data, file=paste0(main_dir, "clean/", name, ".rdata"))
