@@ -25,7 +25,6 @@ india_map[, state_id := as.numeric(id)]
 load(paste0(shapefile_dir, "loc.rdata"))
 
 files <- c("causes", "means", "profession", "education")
-files <- c("profession", "education")
 
 for (name in files){
   print(name)
@@ -34,9 +33,6 @@ for (name in files){
   data <- merge(data, loc, by="state", all.x=T)
   data[is.na(deaths), deaths:=0] #set nulls in kerala in 2006 to zero, for now
   
-  #TEST: remove lakshadweep
-  data <- data[state_id!=19]
-  
   #convert death counts for each classification to % of the whole state 
   summed <- data[, list(deaths=sum(deaths)), by="state,state_id,year,classification,classification_label"]
   summed[, summed_deaths:= sum(deaths), by="state,year"]
@@ -44,34 +40,25 @@ for (name in files){
   setkeyv(summed, c("year", "classification"))
   
   #DEATHS BY PERCENT:
-  for (class in unique(summed$classification)){
-    print(class)
-    for_extremes <- summed[classification==class]
-    class_label <- for_extremes$classification_label[[1]]
-    print(class_label)
-    newmin <- min(for_extremes$class_percent)-(mean(for_extremes$class_percent)/3)
-    newmax <- max(for_extremes$class_percent)+(mean(for_extremes$class_percent)/3)
-    minval <- ifelse(newmin<0, 0, newmin)
-    maxval <- ifelse(newmax>1, 1, newmax)
-    pdf(paste0(main_dir, "plots/", name, "/death_proportions_", class_label, ".pdf"), width=14, height=8)
-    print(paste0(main_dir, "plots/", name, "/death_proportions_", class_label, ".pdf"))
+    pdf(paste0(main_dir, "plots/", name, "/death_proportions_all.pdf"), width=14, height=8)
     for (yearval in unique(summed$year)){
-      mapdata <- merge(summed[J(yearval, class)], india_map, by="state_id", allow.cartesian=T)
+      print(yearval)
+      mapdata <- merge(summed[J(yearval)], india_map, by="state_id", allow.cartesian=T)
       map_plot<- ggplot(mapdata) +
         geom_polygon(aes(x=long, y=lat, group=group, fill=class_percent)) +
         #geom_path(data=mapdata, aes(x=long, y=lat, group=group)) +
-        scale_fill_gradientn(colours=brewer.pal(7, "Reds"), limits=c(minval,maxval)) +
+        scale_fill_gradientn(colours=brewer.pal(7, "Reds")[2:7], limits=c(0,1)) +
+        facet_wrap(~classification) + 
         scale_x_continuous("", breaks=NULL) +
         scale_y_continuous("", breaks=NULL) +
         coord_fixed(ratio=1) +
         guides(fill=guide_colourbar(title="", barheight=20)) +
-        labs(title = paste0("Proportion of Deaths Due to ", capitalize(name), ": ", class, ", ", yearval)) +
+        labs(title = paste0("Proportion of Deaths by ", capitalize(name), ", ", yearval)) +
         theme_bw(base_size=20)
       
       print(map_plot)
     }
     dev.off()
-  }
   
   
   #con
