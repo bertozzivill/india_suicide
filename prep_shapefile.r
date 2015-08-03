@@ -1,10 +1,10 @@
 ####################################################################################################
 ## Author: Amelia Bertozzi-Villa
-## Description: Prep a shapefile for India that removes Telangana (it wasn't a state for the years
-##    of our analysis), and create a dataset that maps from state name/id to 'merged' id
-## Output: a spatialPolygonsDataFrame named 'indis_map' where state_id is the ID variable for each
-##  polygon, and a data.table named 'loc' that maps state name to state_id (1-36 alphabetically, including
-## Telangana) and merged_id (1-35 alphabetically, except that Telangana=2)
+## Description: Prep a shapefile for India that includes the proper shape of Jammu and Kashmir.
+##  Note that this shapefile contains boundaries for the union territories of Puducherry, Andaman & Nicobar,
+##  and Chandigarh, but NOT Dadra & Nagar Haveli, Daman & Diu, or Lakshadweep.
+## Output: a spatialPolygonsDataFrame named 'india_map' where state_id is the ID variable for each
+##  polygon (1-32, in alphabetical order)
 ####################################################################################################
 
 library(data.table)
@@ -14,9 +14,6 @@ library(rgdal)
 
 rm(list=ls())
 main_dir <- "C:/Users/abertozz/Desktop/practicum/suicide/data/plots/shapefiles/"
-
-#load locations file
-loc <-fread(paste0(main_dir, "loc.csv"))
 
 # load shape file
 india_map <- readOGR(paste0(main_dir, "download_toofew/india-states-edited-2.shp"), layer="india-states-edited-2")

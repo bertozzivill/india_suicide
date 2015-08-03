@@ -30,7 +30,9 @@ rm(list=ls())
 main_dir <- "C:/Users/abertozz/Desktop/practicum/suicide/data/"
 
 files <- c("causes", "education", "means", "profession", "social_status")
-shared_colnames <- c("state", "state_code", "year", "ID", "category_label", "category", "classification_label", "classification")
+shared_colnames <- c("state", "year",  "category_label", "category", "classification_label", "classification")
+
+loc<- fread(paste0(main_dir, "plots/shapefiles/loc.csv"))
 
 alldata <- lapply(files, function(name){
   print(name)
@@ -40,11 +42,16 @@ alldata <- lapply(files, function(name){
   #merge on cleaned category names
   cat_names <- fread(paste0(main_dir, "raw/", name, "_convert.csv"))
   import <- merge(import, cat_names, by=intersect(names(import), names(cat_names)), all=T)
-  import[[names(cat_names)[[1]]]] <- NULL
+  import[[names(cat_names)[[1]]]] <- NULL #drop original, messy column name
+  
+  #drop state_code and ID, they're irrelevant at the moment and mess up the reshape
+  import$state_code<-NULL; import$ID<-NULL;
+  
   if (name %in% c("education", "social_status")){
     import <- melt(import, id.vars=c(shared_colnames), variable.name="sex", value.name="deaths")
     import <- import[sex!="total"]
-    setcolorder(import, c(1,2,3,4,9,5,6,7,8,10))
+    #briefly create a null 'age' column for consistency with the other dataset
+    import[,age:=NA]
   }else{
     #reshape age/sex long
     import <- melt(import, id.vars=c(shared_colnames), variable.name="agesex", value.name="deaths")
@@ -59,15 +66,23 @@ alldata <- lapply(files, function(name){
     # numerics indicating the first year of the age group.
     import[, age:= ifelse(substr(age, 1,2)=="up", 0, as.numeric(substr(age, 1,2)))]
     import$agesex <-NULL
-    #order columns better
-    setcolorder(import, c(1,2,3,4,10,11,5,6,7,8,9))
   }
+  
+  #for now, allocate zeros to those missings in kerala in 2006
+  import[is.na(deaths), deaths:=0]
+  
+  #merge on loc-- this gives information on state_id (for mapping), development status, and state/union territory status (drop union territories)
+  import <- merge(import, loc, by="state", all=T)
+  import <- import[union_territory!=1]; import$union_territory <- NULL; #drop union territories
+  
+  #rename and order properly
   import[, sex:= ifelse(sex=="male", 1, 2)]
-  if (name %in% c("education", "social_status")) import <-import[order(state, year, sex, category)] else import<-import[order(state, year, sex, age, category)]
+  setcolorder(import, c("state", "state_id", "developed", "year", "sex", "age", "classification", "classification_label", "category", "category_label", "deaths"))
+  import<-import[order(state, year, sex, age, classification, category)]
+  if (name %in% c("social_status", "education")) import$age<-NULL #drop age back out
   total <- import[category=="total"]
   if (name != "social_status") import <- import[category_label!="total"]
   data <- copy(import)
-  data$state_code<-NULL; data$ID<-NULL;
   save(data, file=paste0(main_dir, "clean/", name, ".rdata"))
   save(total, file=paste0(main_dir, "clean/", name, "_total.rdata"))
   return(import)
