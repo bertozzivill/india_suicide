@@ -16,6 +16,13 @@ main_dir <- "C:/Users/abertozz/Desktop/practicum/suicide/data/"
 
 files <- c("causes", "means")
 source(paste0(main_dir, "../code/line_plot.r"))
+load(paste0(main_dir, "clean/pop.rdata"))
+pop[, year:=as.factor(year)]
+pop[, age:=as.factor(age)]
+pop[, dev_status:= ifelse(developed==1, "More Developed", "Less Developed")]
+
+#merge on population
+#import <- merge(import, pop, by=intersect(names(import), names(pop)), all=T)
 
 for (name in files){
   print(name)
@@ -30,16 +37,22 @@ for (name in files){
     #all deaths over time (only need to run this once)
     if (name=="causes"){
       summed <- data[, list(deaths=sum(deaths)), by=eval(paste0(natval,",year"))]
+      sumpop <- pop[, list(pop=sum(pop)), by=eval(paste0(natval,",year"))]
+      summed <- merge(summed, sumpop, by=intersect(names(summed), names(sumpop)), all=T)
+      summed[, rate:=(deaths/pop)*1000]
       print("plotting by year")
       
-      pdf(file=paste0(main_dir, "plots/all_deaths", natval, ".pdf"), width=14, height=8)
-      image <- line_plot(data=summed, 
-                         yvar="deaths", 
-                         facet_str=paste0(".~", natval), 
-                         title="Suicides Over Time",
-                         ylabel="Deaths")
-      print(image)
-      dev.off()
+      for (typeval in c("deaths", "rate")){
+        labelvar <- ifelse(typeval=="deaths", "Deaths", "Mortality Rate")
+        pdf(file=paste0(main_dir, "plots/all_", typeval, "_", natval, ".pdf"), width=14, height=8)
+        image <- line_plot(data=summed, 
+                           yvar=typeval, 
+                           facet_str=paste0(".~", natval), 
+                           title="Suicides Over Time",
+                           ylabel=labelvar)
+        print(image)
+        dev.off()
+      }
     }
     
     #deaths by classification for whole country over time (collapse over sex and age)
@@ -47,9 +60,12 @@ for (name in files){
     summed <- data[, list(deaths=sum(deaths)), by=eval(paste0(natval,",year,classification"))]
     summed[, summed_deaths:= sum(deaths), by="year"]
     summed[, prop:= ifelse(summed_deaths==0, 0,deaths/summed_deaths)]
+    sumpop <- pop[, list(pop=sum(pop)), by=eval(paste0(natval,",year"))]
+    summed <- merge(summed, sumpop, by=intersect(names(summed), names(sumpop)), all=T)
+    summed[, rate:=(deaths/pop)*1000]
     
-    for(typeval in c("deaths", "prop")){
-      labelvar<-ifelse(typeval=="deaths", "Deaths", "Proportion")
+    for(typeval in c("deaths", "prop", "rate")){
+      labelvar<-ifelse(typeval=="deaths", "Deaths", ifelse(typeval=="prop", "Proportion", "Mortality Rate"))
       pdf(file=paste0(main_dir, "plots/", name, "/", natval, "/", typeval, "_by_class.pdf"), width=14, height=8)
       image  <- line_plot(data=summed, 
                           yvar=typeval, 
@@ -66,17 +82,20 @@ for (name in files){
     summed <- data[, list(deaths=sum(deaths)), by=eval(paste0(natval,",year,classification,sex,age"))]
     summed[, summed_deaths:= sum(deaths), by=eval(paste0(natval,",year,age,sex"))]
     summed[, prop:= ifelse(summed_deaths==0, 0,deaths/summed_deaths)]
+    sumpop <- pop[, list(pop=sum(pop)), by=eval(paste0(natval,",year,sex,age"))]
+    summed <- merge(summed, sumpop, by=intersect(names(summed), names(sumpop)), all=T)
+    summed[, rate:=(deaths/pop)*1000]
     setkeyv(summed, c("age", natval))
     
-    for(typeval in c("deaths", "prop")){
-      labelvar<-ifelse(typeval=="deaths", "Deaths", "Proportion")
-      
+    for(typeval in c("deaths", "prop", "rate")){
+      labelvar<-ifelse(typeval=="deaths", "Deaths", ifelse(typeval=="prop", "Proportion", "Mortality Rate"))
+
       pdf(file=paste0(main_dir, "plots/", name, "/", natval ,"/", typeval, "_class_loop_age.pdf"), width=14, height=8)
       for(ageval in unique(summed$age)){
         image  <- line_plot(data=summed[J(ageval)], 
                             yvar=typeval, 
                             groupvar="classification",
-                            facet_str=paste0("sex~", natval), 
+                            facet_str=paste0(natval, "~sex"), 
                             title=paste("Deaths by", capitalize(name), ",", ageval),
                             ylabel=labelvar)
         print(image)
@@ -89,17 +108,20 @@ for (name in files){
     summed <- data[, list(deaths=sum(deaths)), by=eval(paste0(natval,",year,classification,sex,age"))]
     summed[, summed_deaths:= sum(deaths), by=eval(paste0(natval,",year,sex,classification"))]
     summed[, prop:= ifelse(summed_deaths==0, 0,deaths/summed_deaths)]
+    sumpop <- pop[, list(pop=sum(pop)), by=eval(paste0(natval,",year,sex,age"))]
+    summed <- merge(summed, sumpop, by=intersect(names(summed), names(sumpop)), all=T)
+    summed[, rate:=(deaths/pop)*1000]
     setkeyv(summed, "classification")
     
-    for(typeval in c("deaths", "prop")){
-      labelvar<-ifelse(typeval=="deaths", "Deaths", "Proportion")
+    for(typeval in c("deaths", "prop", "rate")){
+      labelvar<-ifelse(typeval=="deaths", "Deaths", ifelse(typeval=="prop", "Proportion", "Mortality Rate"))
       
       pdf(file=paste0(main_dir, "plots/", name, "/",natval, "/", typeval, "_age_loop_class.pdf"), width=14, height=8)
       for(class in unique(summed$classification)){
         image  <- line_plot(data=summed[J(class)], 
                             yvar=typeval, 
                             groupvar="age",
-                            facet_str=paste0("sex~", natval), 
+                            facet_str=paste0(natval, "~sex"), 
                             title=paste("Deaths by", capitalize(name), ",", class),
                             ylabel=labelvar)
         
