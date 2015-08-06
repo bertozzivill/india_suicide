@@ -14,61 +14,74 @@ library(RColorBrewer)
 
 rm(list=ls())
 main_dir <- "C:/Users/abertozz/Desktop/practicum/suicide/data/"
-mapcolors <- c("#001C73", "#0070FF", "#00A884", "#A3FF73", "#FFFF00", "#FFBF00", "darkorange", "#FF0000", "#730000")
+rbPal <- colorRampPalette(c("red", "gold","dark green"))
+redgreencolors <- rbPal(7)
+#mapcolors <- c("#001C73", "#0070FF", "#00A884", "#A3FF73", "#FFFF00", "#FFBF00", "darkorange", "#FF0000", "#730000")
 shapefile_dir <- paste0(main_dir, "plots/shapefiles/")
+
+source(paste0(main_dir, "../code/plotting_fns.r"))
+
+##function to get rates and proportions from dataset
+sumvars <- function(data, pop, bysum, byprop, byrate){
+  summed <- data[, list(deaths=sum(deaths)), by=bysum]
+  summed[, summed_deaths:= sum(deaths), by=byprop]
+  summed[, prop:= ifelse(summed_deaths==0, 0,deaths/summed_deaths)]
+  sumpop <- pop[, list(pop=sum(pop)), by=byrate]
+  summed <- merge(summed, sumpop, by=intersect(names(summed), names(sumpop)), all=T)
+  summed[, rate:=(deaths/pop)*1000]
+  return(summed)
+}
 
 ## format shapefile
 load(paste0(shapefile_dir, "prepped_shapefile.rdata"))
 india_map <- data.table(fortify(india_map))
 india_map[, state_id := as.numeric(id)]
 
-load(paste0(shapefile_dir, "loc.rdata"))
+load(paste0(main_dir, "clean/pop.rdata"))
+pop[, year:=as.factor(year)]
+pop[, age:=as.factor(age)]
+pop <- pop[age!=0]
 
-files <- c("causes", "means", "profession", "education")
+files <- c("causes", "means")
 
 for (name in files){
   print(name)
   load(paste0(main_dir, "clean/", name, ".rdata"))
   data[, sex := factor(sex, labels=c("Males", "Females"))]
-  data <- merge(data, loc, by="state", all.x=T)
-  data[is.na(deaths), deaths:=0] #set nulls in kerala in 2006 to zero, for now
+  data[, year:=as.factor(year)]
+  data[, age:=as.factor(age)]
+  data[, classification:=as.factor(classification)]
+  #remove age=0 
+  data <-data[age!=0]
   
-  #convert death counts for each classification to % of the whole state 
-  summed <- data[, list(deaths=sum(deaths)), by="state,state_id,year,classification,classification_label"]
-  summed[, summed_deaths:= sum(deaths), by="state,year"]
-  summed[, class_percent:= ifelse(summed_deaths==0, 0,deaths/summed_deaths)]
-  setkeyv(summed, c("year", "classification"))
-  
-  #DEATHS BY PERCENT:
-    pdf(paste0(main_dir, "plots/", name, "/death_proportions_all.pdf"), width=14, height=8)
-    for (yearval in unique(summed$year)){
-      print(yearval)
-      mapdata <- merge(summed[J(yearval)], india_map, by="state_id", allow.cartesian=T)
-      map_plot<- ggplot(mapdata) +
-        geom_polygon(aes(x=long, y=lat, group=group, fill=class_percent)) +
-        #geom_path(data=mapdata, aes(x=long, y=lat, group=group)) +
-        scale_fill_gradientn(colours=brewer.pal(7, "Reds")[2:7], limits=c(0,1)) +
-        facet_wrap(~classification) + 
-        scale_x_continuous("", breaks=NULL) +
-        scale_y_continuous("", breaks=NULL) +
-        coord_fixed(ratio=1) +
-        guides(fill=guide_colourbar(title="", barheight=20)) +
-        labs(title = paste0("Proportion of Deaths by ", capitalize(name), ", ", yearval)) +
-        theme_bw(base_size=20)
-      
-      print(map_plot)
+  for (typeval in c("prop", "rate")){
+    if (typeval=="prop"){
+      labelvar<-"Proportions"; limvals<-c(0,1); colors<-brewer.pal(7, "Reds");
+    }else{
+      labelvar<-"Rates"; limvals<-NULL; colors<-redgreencolors;
     }
-    dev.off()
+    print(paste("plotting", labelvar))
   
-  
-  #con
-#   summed[, year:= paste0("year_", year)]
-#   summed <- data.table(dcast(summed, 'state + state_id+classification ~ year', value.var="deaths"))
-#   summed[, percent_change:=(year_2010-year_2001)/year_2001]
-#   summed[is.na(percent_change), percent_change:=0] #zeros in both years -> zero percent change
-#   summed[is.infinite(percent_change), percent_change:=NA] #zeros in first year -> missing percent change
-#   
-  #map all deaths in all years, as a for-example
-
+    for (facet_val in c("classification", "year")){
+      loop_val <- ifelse(facet_val=="classification", "year", "classification")
+      summed <- sumvars(data, pop, bysum="state,state_id,year,classification,classification_label", byprop="state,year", byrate="state,state_id,year")
+      setkeyv(summed, loop_val)
+      
+      pdf(paste0(main_dir, "plots/", name, "/state/death_", typeval, "_loop_", loop_val, ".pdf"), width=14, height=8)
+      for (this_loop in unique(summed[[loop_val]])){
+        print(this_loop)
+        mapdata <- merge(summed[J(this_loop)], india_map, by="state_id", allow.cartesian=T)
+        image <- map_plot(mapdata,
+                          fillvar=typeval,
+                          facet_str=paste0("~", facet_val),
+                          title=paste("Death", labelvar, "by", capitalize(name), ",", this_loop),
+                          colors=rev(colors),
+                          limvals=limvals)
+        
+        print(image)
+      }
+      dev.off()
+    }
+  }
   
 }
