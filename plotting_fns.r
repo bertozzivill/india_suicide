@@ -7,6 +7,17 @@
 ##      --deaths: a cleaned data.table
 ##############################################################################################################################
 
+##function to get rates and proportions from dataset
+sumvars <- function(data, pop, bysum, byprop, byrate){
+  summed <- data[, list(deaths=sum(deaths)), by=bysum]
+  summed[, summed_deaths:= sum(deaths), by=byprop]
+  summed[, prop:= ifelse(summed_deaths==0, 0,deaths/summed_deaths)]
+  sumpop <- pop[, list(pop=sum(pop)), by=byrate]
+  summed <- merge(summed, sumpop, by=intersect(names(summed), names(sumpop)), all=T)
+  summed[, rate:=(deaths/pop)*1000]
+  return(summed)
+}
+
 line_plot <- function(data, yvar, facet_str, title, pal="Set2", ylabel, xvar="year", groupvar="1",  xlabel="Year"){
   image <- ggplot(data, aes_string(x=xvar, y=yvar, group=groupvar)) +
           geom_line(aes_string(color=groupvar), size=3) +
