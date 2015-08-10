@@ -9,8 +9,9 @@ library(data.table)
 library(reshape2)
 
 rm(list=ls())
-main_dir <- "C:/Users/abertozz/Desktop/practicum/suicide/data/"
+main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
 
+agenames <- fread(paste0(main_dir, "agenames.csv"))
 
 yearvals <- 2001:2010
 data <- fread(paste0(main_dir, "raw/india_pop.csv"))
@@ -45,14 +46,25 @@ data <- merge(data, loc, by="location_name", all.x=T)
 #collapse on age and state to come up with a final dataset
 data <- data[, list(pop=sum(pop), sex=sex_id), by="state_id,year,sex_id,age"]
 data$sex_id<-NULL
-setcolorder(data, c("state_id", "year", "sex", "age", "pop"))
-data <- data[order(state_id, year, sex, age)]
+
+#merge on nice age names
+data <- merge(data, agenames, by="age", all=T)
 
 #load acutal 'loc', merge on
 loc<- fread(paste0(main_dir, "plots/shapefiles/loc.csv"))
 data <- merge(data, loc[, list(state, state_id, developed)], by="state_id", all.x=T)
-data$national <- "National"
 
+#new columns
+data$national <- "National"
+data[, dev_status:= ifelse(developed==1, "More Developed", "Less Developed")]
+
+#order columns
+setcolorder(data, c("national", "dev_status", "developed", "state", "state_id", "year", "sex", "age", "agename", "pop"))
+data <- data[order(state_id, year, sex, age)]
+
+#set values to factor
+data[, year:=as.factor(year)]
+data[, age:=as.factor(age)]
 pop<-copy(data)
 
 #save

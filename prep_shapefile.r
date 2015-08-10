@@ -13,7 +13,7 @@ library(rgeos)
 library(rgdal)
 
 rm(list=ls())
-main_dir <- "C:/Users/abertozz/Desktop/practicum/suicide/data/plots/shapefiles/"
+main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/plots/shapefiles/"
 
 # load shape file
 india_map <- readOGR(paste0(main_dir, "download_toofew/india-states-edited-2.shp"), layer="india-states-edited-2")

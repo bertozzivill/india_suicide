@@ -12,9 +12,9 @@ library(ggplot2)
 library(Hmisc)
 
 rm(list=ls())
-main_dir <- "C:/Users/abertozz/Desktop/practicum/suicide/data/"
+main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
 
-files <- c("causes", "means")
+files <- c("causes", "means", "profession")
 source(paste0(main_dir, "../code/plotting_fns.r"))
 load(paste0(main_dir, "clean/pop.rdata"))
 pop[, year:=as.factor(year)]
@@ -46,7 +46,7 @@ for (name in files){
       
       for (typeval in c("deaths", "rate")){
         labelvar <- ifelse(typeval=="deaths", "Deaths", "Mortality Rate")
-        pdf(file=paste0(main_dir, "plots/all_", typeval, "_", natval, ".pdf"), width=14, height=8)
+        pdf(file=paste0(main_dir, "plots/summary/all_", typeval, "_", natval, ".pdf"), width=14, height=8)
         image <- line_plot(data=summed, 
                            yvar=typeval, 
                            facet_str=paste0(".~", natval), 

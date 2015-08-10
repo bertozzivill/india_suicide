@@ -12,9 +12,9 @@ library(ggplot2)
 library(Hmisc)
 
 rm(list=ls())
-main_dir <- "C:/Users/abertozz/Desktop/practicum/suicide/data/"
+main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
 
-files <- c("causes", "means")
+files <- c("causes", "means", "profession")
 source(paste0(main_dir, "../code/plotting_fns.r"))
 
 for (name in files){

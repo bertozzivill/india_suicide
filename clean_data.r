@@ -27,12 +27,13 @@ library(data.table)
 library(reshape2)
 
 rm(list=ls())
-main_dir <- "C:/Users/abertozz/Desktop/practicum/suicide/data/"
+main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
 
 files <- c("causes", "education", "means", "profession", "social_status")
 shared_colnames <- c("state", "year",  "category_label", "category", "classification_label", "classification")
 
 loc<- fread(paste0(main_dir, "plots/shapefiles/loc.csv"))
+agenames <- fread(paste0(main_dir, "agenames.csv"))
 
 alldata <- lapply(files, function(name){
   print(name)
@@ -51,7 +52,7 @@ alldata <- lapply(files, function(name){
     import <- melt(import, id.vars=c(shared_colnames), variable.name="sex", value.name="deaths")
     import <- import[sex!="total"]
     #briefly create a null 'age' column for consistency with the other dataset
-    import[,age:=NA]
+    import[,age:=NA]; import[,agename:=NA]
   }else{
     #reshape age/sex long
     import <- melt(import, id.vars=c(shared_colnames), variable.name="agesex", value.name="deaths")
@@ -66,6 +67,9 @@ alldata <- lapply(files, function(name){
     # numerics indicating the first year of the age group.
     import[, age:= ifelse(substr(age, 1,2)=="up", 0, as.numeric(substr(age, 1,2)))]
     import$agesex <-NULL
+    
+    #merge on nicer names
+    import<-merge(import, agenames, by="age", all=T)
   }
   
   #for now, allocate zeros to those missings in kerala in 2006
@@ -77,11 +81,27 @@ alldata <- lapply(files, function(name){
   
   #rename and order properly
   import[, sex:= ifelse(sex=="male", 1, 2)]
-  setcolorder(import, c("state", "state_id", "developed", "year", "sex", "age", "classification", "classification_label", "category", "category_label", "deaths"))
+  import[, national:="National"]
+  import[, dev_status:= ifelse(developed==1, "More Developed", "Less Developed")]
+  setcolorder(import, c("national", "dev_status", "developed", "state", "state_id", "year", "sex", "age", "agename", "classification", "classification_label", "category", "category_label", "deaths"))
   import<-import[order(state, year, sex, age, classification, category)]
-  if (name %in% c("social_status", "education")) import$age<-NULL #drop age back out
+  
+  #convert to factor
+  import[, sex := factor(sex, labels=c("Males", "Females"))]
+  import[, year:=as.factor(year)]
+  import[, age:=as.factor(age)]
+  import[, classification:=as.factor(classification)]
+  
+  #drop age if necessary
+  if (name %in% c("social_status", "education")){
+    import$age<-NULL; import$agename<-NULL
+  } 
+  
+  #extract "total" category
   total <- import[category=="total"]
   if (name != "social_status") import <- import[category_label!="total"]
+  
+  #save
   data <- copy(import)
   save(data, file=paste0(main_dir, "clean/", name, ".rdata"))
   save(total, file=paste0(main_dir, "clean/", name, "_total.rdata"))

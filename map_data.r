@@ -14,7 +14,7 @@ library(RColorBrewer)
 library(gdata)
 
 rm(list=ls())
-main_dir <- "C:/Users/abertozz/Desktop/practicum/suicide/data/"
+main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
 rbPal <- colorRampPalette(c("red", "gold","dark green"))
 redgreencolors <- rbPal(7)
 #mapcolors <- c("#001C73", "#0070FF", "#00A884", "#A3FF73", "#FFFF00", "#FFBF00", "darkorange", "#FF0000", "#730000")
@@ -28,27 +28,17 @@ india_map <- data.table(fortify(india_map))
 india_map[, state_id := as.numeric(id)]
 
 #read in datasets for cleaner age names and plots to loop through
-agenames <- fread(paste0(main_dir, "plots/agenames.csv"))
 looplist <- fread(paste0(main_dir, "plots/plot_loops.csv"), header=T)
 
 #read data
 load(paste0(main_dir, "clean/pop.rdata"))
-pop[, year:=as.factor(year)]
 pop <- pop[age!=0]
-pop <- merge(pop, agenames, by="age", all=T)
-pop[, age:=as.factor(age)]
 
 files <- c("causes", "means")
 
 for (name in files){
   print(name)
   load(paste0(main_dir, "clean/", name, ".rdata"))
-  #merge on better age names
-  data <- merge(data, agenames, by="age", all=T)
-  data[, sex := factor(sex, labels=c("Males", "Females"))]
-  data[, year:=as.factor(year)]
-  data[, age:=as.factor(age)]
-  data[, classification:=as.factor(classification)]
   #remove age=0 
   data <-data[age!=0]
   data[, all:=paste("All", capitalize(name))]
