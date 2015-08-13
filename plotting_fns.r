@@ -25,6 +25,9 @@ line_plot <- function(data, yvar, facet_str, title, pal="Set2", ylabel, xvar="ye
           labs(title=title,
                x=xlabel,
                y=ylabel)
+  if (length(unique(data[[groupvar]]))>8){
+    pal<-"Paired"
+  }
   if (groupvar!="1"){
     image <- image + scale_color_brewer(palette=pal)
   }
@@ -44,7 +47,7 @@ bar_plot <- function(data, yvar, fillvar, facet_str, title, pal="Set2", ylabel, 
   return(image)
 }
 
-map_plot <- function(data, fillvar, facet_str, title, colors=brewer.pal(7, "Reds"), limvals=NULL){
+map_plot <- function(data, fillvar, facet_str, title, colors=brewer.pal(7, "Reds"), limvals=NULL, outline=F){
   image <- ggplot(data) +
             geom_polygon(aes_string(x="long", y="lat", group="group", fill=fillvar)) +
             facet_wrap(as.formula(facet_str)) +
@@ -55,6 +58,8 @@ map_plot <- function(data, fillvar, facet_str, title, colors=brewer.pal(7, "Reds
             guides(fill=guide_colourbar(title="", barheight=20)) +
             labs(title = title) +
             theme_bw(base_size=20)
+  
+  if (outline==T) image<-image+geom_path(data=data, aes(x=long, y=lat, group=group))
             
   return(image)
             

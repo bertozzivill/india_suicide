@@ -51,7 +51,7 @@ data$sex_id<-NULL
 data <- merge(data, agenames, by="age", all=T)
 
 #load acutal 'loc', merge on
-loc<- fread(paste0(main_dir, "plots/shapefiles/loc.csv"))
+loc<- fread(paste0(main_dir, "clean/loc.csv"))
 data <- merge(data, loc[, list(state, state_id, developed)], by="state_id", all.x=T)
 
 #new columns

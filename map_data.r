@@ -17,7 +17,6 @@ rm(list=ls())
 main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
 rbPal <- colorRampPalette(c("red", "gold","dark green"))
 redgreencolors <- rbPal(7)
-#mapcolors <- c("#001C73", "#0070FF", "#00A884", "#A3FF73", "#FFFF00", "#FFBF00", "darkorange", "#FF0000", "#730000")
 shapefile_dir <- paste0(main_dir, "plots/shapefiles/")
 
 source(paste0(main_dir, "../code/plotting_fns.r"))
@@ -60,6 +59,9 @@ for (name in files){
         assign(colname, this_level[[colname]][[1]])
       }
       
+      #set limits:
+      #   If proportion, limits should be (0,1)
+      #   If mortality rate looping over year, limits should go from the minimum to the maximum rate over the time period
       if (facet_val=="classification" & typeval=="prop") limvals <- c(0,1) else limvals<-NULL 
       
       #make loop_vals into a vector
@@ -79,8 +81,11 @@ for (name in files){
       summed <- sumvars(data, pop, bysum=bysum, byprop=byprop, byrate=byrate)
       setkeyv(summed, loop_vals)
       
+      #TEST: EXCLUDE SIKKIM AND TRIPURA
+      #summed <- summed[!state %in% c("Sikkim", "Tripura")]
+      
       #start pdf
-      pdf(paste0(main_dir, "plots/", name, "/state/", ifelse(startsWith(level, "year"), "year/", "class/"), typeval, "_", level, ".pdf"))
+      pdf(paste0(main_dir, "plots/", name, "/state/", ifelse(startsWith(level, "year"), "year/", "class/"), typeval, "_", level, ".pdf"), width=14, height=8)
       
       #finally, loop through the values of 'loop_combos' to make individual plots
       loop_depth <- length(loop_vals)

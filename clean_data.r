@@ -32,7 +32,7 @@ main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
 files <- c("causes", "education", "means", "profession", "social_status")
 shared_colnames <- c("state", "year",  "category_label", "category", "classification_label", "classification")
 
-loc<- fread(paste0(main_dir, "plots/shapefiles/loc.csv"))
+loc<- fread(paste0(main_dir, "clean/loc.csv"))
 agenames <- fread(paste0(main_dir, "agenames.csv"))
 
 alldata <- lapply(files, function(name){
@@ -83,7 +83,7 @@ alldata <- lapply(files, function(name){
   import[, sex:= ifelse(sex=="male", 1, 2)]
   import[, national:="National"]
   import[, dev_status:= ifelse(developed==1, "More Developed", "Less Developed")]
-  setcolorder(import, c("national", "dev_status", "developed", "state", "state_id", "year", "sex", "age", "agename", "classification", "classification_label", "category", "category_label", "deaths"))
+  setcolorder(import, c("national", "dev_status", "developed", "coastal", "state", "state_id", "year", "sex", "age", "agename", "classification", "classification_label", "category", "category_label", "deaths"))
   import<-import[order(state, year, sex, age, classification, category)]
   
   #convert to factor
