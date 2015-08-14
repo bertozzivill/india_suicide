@@ -65,6 +65,7 @@ data <- data[order(state_id, year, sex, age)]
 #set values to factor
 data[, year:=as.factor(year)]
 data[, age:=as.factor(age)]
+data[, sex := factor(sex, labels=c("Males", "Females"))]
 pop<-copy(data)
 
 #save

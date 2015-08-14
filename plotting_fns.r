@@ -8,13 +8,13 @@
 ##############################################################################################################################
 
 ##function to get rates and proportions from dataset
-sumvars <- function(data, pop, bysum, byprop, byrate){
+sumvars <- function(data, pop, bysum, byprop, byrate, rate_per){
   summed <- data[, list(deaths=sum(deaths)), by=bysum]
   summed[, summed_deaths:= sum(deaths), by=byprop]
   summed[, prop:= ifelse(summed_deaths==0, 0,deaths/summed_deaths)]
   sumpop <- pop[, list(pop=sum(pop)), by=byrate]
   summed <- merge(summed, sumpop, by=intersect(names(summed), names(sumpop)), all=T)
-  summed[, rate:=(deaths/pop)*1000]
+  summed[, rate:=(deaths/pop)*rate_per]
   return(summed)
 }
 
@@ -30,6 +30,8 @@ line_plot <- function(data, yvar, facet_str, title, pal="Set2", ylabel, xvar="ye
   }
   if (groupvar!="1"){
     image <- image + scale_color_brewer(palette=pal)
+  }else{
+    image <- image + guides(color=FALSE)
   }
   
   return(image)

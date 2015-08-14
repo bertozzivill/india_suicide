@@ -114,5 +114,8 @@ means <- alldata[[3]]
 profession <- alldata[[4]]
 social_status <- alldata[[5]]
 
-
-
+#load pop, merge total death counts on (for easier plotting)
+load(paste0(main_dir, "clean/pop.rdata"))
+alldeaths <- causes[, list(deaths=sum(deaths)), by="year,sex,age,state_id"]
+pop <- merge(pop, alldeaths, by=c("year", "sex", "age", "state_id"), all=T)
+save(pop, file=paste0(main_dir, "clean/pop.rdata"))
