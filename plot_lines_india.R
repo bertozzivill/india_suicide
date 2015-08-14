@@ -35,6 +35,19 @@ for (name in files){
   #remove age=0 
   data <-data[age!=0]
   
+  #test rates
+  alldeaths <- data[, list(deaths=sum(deaths)), by="year"]
+  allpop <-pop[, list(pop=sum(pop)), by="year"]
+  all <- merge(allpop, alldeaths, by="year", all=T)
+  all[, rate_per_1000:=(deaths/pop)*1000]
+  all <- melt(all, id.vars="year")
+  all[, variable := ifelse(variable=="pop", "Population", ifelse(variable=="deaths", "Suicide", "Suicide Rate per 1000"))]
+  pdf(file=paste0(main_dir, "plots/all_national_death_pop_rate.pdf"), width=14, height=8)
+  ggplot(all, aes(x=year, y=value, group=1))+
+        geom_line(size=2) +
+        facet_wrap(~variable, scales="free_y")
+  dev.off()
+  
   for (natval in c("national", "dev_status")){
     #all deaths over time (only need to run this once)
     if (name=="causes"){
