@@ -127,36 +127,13 @@ for (name in files){
       dev.off()
     }
     
-    #change in proportion over time
-    props <- summed[, list(national, year, classification, prop)]
-    props[, year:=as.numeric(as.character(year))]
-    yearvals <-  2002:2010
-    setkeyv(props, c("classification", "year"))
+    image + stat_smooth(method="lm")
     
-    difflist <- lapply(unique(summed$classification), function(class){
-      subset <- props[J(class)]
-      diffs <- lapply(unique(subset$year), function(yearval){
-        if (yearval==2001){
-          return(NA)
-        }else{
-          return(props[J(class, yearval)]$prop - props[J(class, yearval-1)]$prop)
-        }
-      })
-      subset$diff_prop <- unlist(diffs)
-      return(subset)
-    })
-    
-    props <- do.call("rbind", difflist)
-    props <- props[!is.na(diff_prop)]
-    
-    image  <- line_plot(data=props, 
-                        yvar="diff_prop", 
-                        groupvar="classification",
-                        facet_str=paste0(".~", natval), 
-                        title="Change in Proportion over Time",
-                        ylabel="Change in Proportion")
-    print(image)
-  
+    #change in proportions over time: simple regression
+    summed[, year:=as.numeric(as.character(year))]
+    regress <- lm(prop ~ year + classification, data=summed)
+    fes <- regress$coefficients
+    #note to self: do this by state
     
     #deaths by classification for whole country over time (collapse over age, but not sex)
     print("plotting by classification")
