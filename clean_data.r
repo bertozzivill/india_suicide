@@ -29,6 +29,8 @@ library(reshape2)
 rm(list=ls())
 main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
 
+source(paste0(main_dir, "../code/prep_pop.r"))
+
 files <- c("causes", "education", "means", "profession", "social_status")
 shared_colnames <- c("state", "year",  "category_label", "category", "classification_label", "classification")
 

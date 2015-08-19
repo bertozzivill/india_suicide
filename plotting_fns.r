@@ -18,6 +18,11 @@ sumvars <- function(data, pop, bysum, byprop, byrate, rate_per){
   return(summed)
 }
 
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length=n+1)
+  hcl(h=hues, l=65, c=100)[1:n]
+}
+
 line_plot <- function(data, yvar, facet_str, title, pal="Set2", ylabel, xvar="year", groupvar="1",  xlabel="Year"){
   image <- ggplot(data, aes_string(x=xvar, y=yvar, group=groupvar)) +
           geom_line(aes_string(color=groupvar), size=3) +
