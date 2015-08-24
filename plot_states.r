@@ -11,7 +11,9 @@ library(reshape2)
 library(ggplot2)
 library(Hmisc)
 library(grDevices)
+library(RColorBrewer)
 options(scipen=10)
+
 
 rm(list=ls())
 main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
@@ -74,12 +76,14 @@ for (level in c("national", "sex", "agename")){
                 geom_line(size=2) + 
                 facet_wrap(~state, scales="free_y")+
                 stat_smooth(method="lm") +
+                guides(color=F)+
                 scale_x_continuous(breaks=c(2001, 2006, 2010), minor_breaks=c(2002,2003,2004,2005,2007,2008,2009)) +
                 labs(title = paste("Suicide", labelvar, "over Time,", groupname),
                      x="Year",
                      y=labelvar)
+              
       
-      if (groupvar=="1") image <- image + guides(color=FALSE)
+      #if (groupvar=="1") image <- image + guides(color=FALSE)
         
       #print(image)
       
@@ -122,11 +126,6 @@ for (myname in mylist.names){
 }
 
 
-
-
-
-##################################################################
-
 #plot showing national-level pop, deaths, and rates side-by-side
 #need to multiplot to show zero in scale of deaths :/
 summed <- pop[, list(Deaths=sum(deaths), Population=sum(pop)), by="year"]
@@ -163,6 +162,9 @@ image<- ggplot(melted, aes(x=year, y=value, group=variable)) +
        y="Rate per 100,000")
 print(image)
 dev.off()
+
+
+##################################################################
 
 ###########################################################
 ## Plots on the year-sex-age level, by classification

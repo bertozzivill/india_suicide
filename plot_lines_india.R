@@ -41,6 +41,15 @@ for (natval in c("national", "dev_status")){
     summed <- pop[, list(deaths=sum(deaths), pop=sum(pop)), by=eval(paste0(natval, level_str))]
     summed[, rate:=(deaths/pop)*rate_per]
     
+    if (natval=="national" & level=="sex"){
+      bothsummed <- copy(summed)
+      setnames(bothsummed, "national", "nat_level")
+    }else if (natval=="dev_status" & level=="sex"){
+      setnames(summed, "dev_status", "nat_level")
+      bothsummed <- rbind(bothsummed, summed)
+      setnames(summed, "nat_level", "dev_status")
+    }
+    
     for (typeval in c("deaths", "rate")){
       labelvar <- ifelse(typeval=="deaths", "Deaths", paste0("Mortality Rate Per ", rate_per))
       image <- line_plot(data=summed, 
@@ -54,6 +63,22 @@ for (natval in c("national", "dev_status")){
   } 
   dev.off()
 }
+
+for (typeval in c("deaths", "rate")){
+  labelvar <- ifelse(typeval=="deaths", "Deaths", paste0("Mortality Rate Per ", rate_per))
+  
+  image <- ggplot(bothsummed, aes_string(x="year", y=typeval, color="sex", group="sex")) +
+            geom_line(size=2) + 
+            facet_grid(.~nat_level)+
+            stat_smooth(method="lm") +
+            #scale_x_continuous(breaks=c(2001, 2006, 2010), minor_breaks=c(2002,2003,2004,2005,2007,2008,2009)) +
+            labs(title = paste("Suicide", labelvar, "over Time"),
+                 x="Year",
+                 y=labelvar)
+  image <- image + theme(legend.position="bottom", legend.title=element_blank())
+  print(image)
+}
+
 
 #plot showing national-level pop, deaths, and rates side-by-side
 #need to multiplot to show zero in scale of deaths :/
@@ -154,14 +179,14 @@ for (name in files){
   
     #deaths by age for whole country over time (by sex and classification)
     print("plotting by classification, sex, and age")
-    summed <- sumvars(data, pop, bysum=paste0(natval,",year,classification,sex,age"), byprop=paste0(natval,",year,age,sex"), byrate=paste0(natval,",year,sex,age"), rate_per=rate_per)
-    setkeyv(summed, c("age", natval))
+    summed <- sumvars(data, pop, bysum=paste0(natval,",year,classification,sex,agename"), byprop=paste0(natval,",year,agename,sex"), byrate=paste0(natval,",year,sex,agename"), rate_per=rate_per)
+    setkeyv(summed, c("agename", natval))
     
     for(typeval in c("deaths", "prop")){
       labelvar<-ifelse(typeval=="deaths", "Deaths", ifelse(typeval=="prop", "Proportion", "Mortality Rate"))
 
       pdf(file=paste0(main_dir, "plots/", name, "/", natval ,"/", typeval, "_class_loop_age.pdf"), width=14, height=8)
-      for(ageval in unique(summed$age)){
+      for(ageval in unique(summed$agename)){
         image  <- line_plot(data=summed[J(ageval)], 
                             yvar=typeval, 
                             groupvar="classification",

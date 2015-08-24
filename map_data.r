@@ -33,7 +33,9 @@ looplist <- fread(paste0(main_dir, "plots/plot_loops.csv"), header=T)
 load(paste0(main_dir, "clean/pop.rdata"))
 pop <- pop[age!=0]
 
-files <- c("causes", "means")
+rate_per <- 100000
+
+files <- c("causes", "means", "profession")
 
 for (name in files){
   print(name)
@@ -46,7 +48,7 @@ for (name in files){
     if (typeval=="prop"){
       labelvar<-"Proportions"; colors<-brewer.pal(7, "Reds");
     }else{
-      labelvar<-"Rates"; colors<-rev(redgreencolors);
+      labelvar<-"Rates per 100,000"; colors<-rev(redgreencolors);
     }
     print(paste("plotting", labelvar))
     
@@ -78,7 +80,7 @@ for (name in files){
       loop_combos <- expand.grid(to_combine)
       
       #generate summed dataset
-      summed <- sumvars(data, pop, bysum=bysum, byprop=byprop, byrate=byrate)
+      summed <- sumvars(data, pop, bysum=bysum, byprop=byprop, byrate=byrate, rate_per=rate_per)
       setkeyv(summed, loop_vals)
       
       #TEST: EXCLUDE SIKKIM AND TRIPURA

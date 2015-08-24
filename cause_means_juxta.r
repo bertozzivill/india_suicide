@@ -33,11 +33,13 @@ for (name in files){
   data[, geo_status:="National"]; data[, geo_type:="national"]; pop[, geo_status:="National"]; pop[, geo_type:="national"]
   national <- sumvars(data, pop, bysum="geo_status,geo_type,year,sex,agename,age,classification",
                       byprop="geo_status,geo_type,year,sex,agename,age",
-                      byrate="geo_status,geo_type,year,sex,agename,age")
+                      byrate="geo_status,geo_type,year,sex,agename,age",
+                      rate_per=100000)
   data[, geo_status:=dev_status]; data[, geo_type:="dev_status"]; pop[, geo_status:=dev_status]; pop[, geo_type:="dev_status"]
   dev <- sumvars(data, pop, bysum="geo_status,geo_type,year,sex,agename,age,classification",
                  byprop="geo_status,geo_type,year,sex,agename,age",
-                 byrate="geo_status,geo_type,year,sex,agename,age")
+                 byrate="geo_status,geo_type,year,sex,agename,age",
+                 rate_per=100000)
   
   summed <- rbind(national, dev)
   summed[, name:=capitalize(name)]

@@ -9,14 +9,19 @@
 library(foreign)
 library(data.table)
 library(reshape2)
+library(ggplot2)
 
 rm(list=ls())
 main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
+ag_dir <- paste0(main_dir, "clean/agriculture/")
+
+land_typeval <- "Total"
 
 #import data
-loc<- fread(paste0(main_dir, "clean/loc.csv"))
-ag_pop <- fread(paste0(main_dir, "clean/ag_pop.csv"))
-load(paste0(main_dir, "clean/pop_for_ag.rdata"))
+loc<- fread(paste0(ag_dir, "../loc.csv"))
+ag_pop <- fread(paste0(ag_dir, "ag_pop.csv"))
+load(paste0(ag_dir, "pop_for_ag.rdata"))
+load(paste0(ag_dir, "work_pop.rdata"))
 
 #collapse ag by sex
 ag_pop <- ag_pop[,list(ag_pop=sum(ag_pop)), by="state,year"]
@@ -25,8 +30,12 @@ ag_pop <- ag_pop[,list(ag_pop=sum(ag_pop)), by="state,year"]
 pop <- pop[age!=0 & age!=65]
 pop <- pop[, list(pop=sum(pop)), by="year,state,state_id"]
 pop[, year:=as.integer(as.character(year))]
+
+#merge pop, ag_pop, and work pop together, calculate work_pop from our (non-census) population estimates
 ag_pop<- merge(ag_pop, pop, by=c("year","state"), all.x=T)
-ag_pop[, perc_ag:=(ag_pop/pop)*100]
+ag_pop <- merge(ag_pop, work_pop[land_type==land_typeval, list(state,year,prop_work)], by=c("year", "state"), all.x=T)
+ag_pop[, work_pop:= pop*prop_work]
+ag_pop[, perc_ag:=(ag_pop/work_pop)*100]
 ag_pop[, year:=as.factor(year)]
 
 
@@ -49,7 +58,7 @@ pdf(paste0(plot_dir, "agriculture_percent.pdf"), width=14, height=8)
 image <- map_plot(mapdata,
                   fillvar="perc_ag",
                   facet_str="~year",
-                  title=paste("Percent of Population in Agriculture, by  Year"),
+                  title=paste("Percent of", land_typeval, "Working Population in Agriculture, by  Year"),
                   colors=redgreencolors)
 print(image)
 dev.off()
@@ -68,8 +77,8 @@ perc <- map_plot(mapdata,
                   colors=redgreencolors)
 print(perc)
 
-#ARBITRARY: Say people are in a "high-agriculture" state if perc_ag in 2011 >10
-wider[, ag_state:=ifelse(perc_2011>10, 1,0)]
+#ARBITRARY: Say people are in a "high-agriculture" state if perc_ag in 2011 >20
+wider[, ag_state:=ifelse(perc_2001>23.2, 1,0)]
 wider[, label:="Agriculture State?"]
 
 mapdata <- merge(wider, india_map, by="state_id", allow.cartesian=T)

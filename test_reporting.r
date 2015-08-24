@@ -45,6 +45,7 @@ for (natval in c("national", "dev_status", "state")){
   summed <- merge(summed, first_year, by=intersect(names(summed), names(first_year)))
   summed[, samerate_deaths:= (initial_rate/rate_per)*pop]
   summed[, death_diff:= deaths-samerate_deaths]
+  summed[, rate_diff:= rate-initial_rate]
   
   reshaped <- melt(summed, id.vars=byvec, measure.vars=c("deaths", "rate", "samerate_deaths", "initial_rate"))
   reshaped[, type:= ifelse(variable %in% c("deaths", "rate"), "Actual", "Constant")]
@@ -64,6 +65,14 @@ for (natval in c("national", "dev_status", "state")){
     geom_line(aes(color=type), size=2) +
     facet_wrap(as.formula(paste0("~", natval)), scales=scales) +
     labs(title= "Actual vs Constant Mortality Rate",
+         x=xlab,
+         y="Rate per 100,000")
+  
+  rate_diff <- ggplot(summed, aes_string(x=xval, group=natval)) +
+    geom_line(aes(y=rate_diff), size=2, alpha=0.4, color=colors[[1]]) +
+    geom_line(aes(y=0), size=2, color=colors[[2]]) +
+    #facet_wrap(as.formula(paste0("~", natval)), scales=scales) +
+    labs(title= "Difference in Rates, Actual-Constant",
          x=xlab,
          y="Rate per 100,000")
   
