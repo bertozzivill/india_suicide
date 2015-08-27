@@ -85,7 +85,7 @@ alldata <- lapply(files, function(name){
   import[, sex:= ifelse(sex=="male", 1, 2)]
   import[, national:="National"]
   import[, dev_status:= ifelse(developed==1, "More Developed", "Less Developed")]
-  setcolorder(import, c("national", "dev_status", "developed", "coastal", "state", "state_id", "year", "sex", "age", "agename", "classification", "classification_label", "category", "category_label", "deaths"))
+  setcolorder(import, c("national", "dev_status", "developed", "coastal", "ag_state", "state", "state_id", "year", "sex", "age", "agename", "classification", "classification_label", "category", "category_label", "deaths"))
   import<-import[order(state, year, sex, age, classification, category)]
   
   #convert to factor
@@ -102,7 +102,7 @@ alldata <- lapply(files, function(name){
   #extract "total" category
   total <- import[category=="total"]
   if (name != "social_status") import <- import[category_label!="total"]
-  
+    
   #save
   data <- copy(import)
   save(data, file=paste0(main_dir, "clean/", name, ".rdata"))
@@ -118,6 +118,6 @@ social_status <- alldata[[5]]
 
 #load pop, merge total death counts on (for easier plotting)
 load(paste0(main_dir, "clean/pop.rdata"))
-alldeaths <- causes[, list(deaths=sum(deaths)), by="year,sex,age,state_id"]
+alldeaths <- unique(causes[, list(deaths=sum(deaths), ag_state), by="year,sex,age,state_id"])
 pop <- merge(pop, alldeaths, by=c("year", "sex", "age", "state_id"), all=T)
 save(pop, file=paste0(main_dir, "clean/pop.rdata"))

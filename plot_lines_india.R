@@ -21,6 +21,7 @@ source(paste0(main_dir, "../code/multiplot.r"))
 load(paste0(main_dir, "clean/pop.rdata"))
 pop[, year:=as.factor(year)]
 pop[, age:=as.factor(age)]
+pop[, ag_status := ifelse(ag_state==1, "Agricultural", "Non-Agricultural")]
 pop[, dev_status:= ifelse(developed==1, "More Developed", "Less Developed")]
 pop <- pop[age!=0]
 
@@ -30,12 +31,12 @@ pop <- pop[age!=0]
 #########################################################
 rate_per <- 100000
 
-for (natval in c("national", "dev_status")){
+for (natval in c("national", "dev_status", "ag_status")){
   level_list <- NULL; level_str <- ""
   pdf(file=paste0(main_dir, "plots/summary/all_", natval, ".pdf"), width=14, height=8)
   for (level in c("year", "sex", "agename")){
     level_list <- c(level_list, level); level_str<- paste0(level_str, ",", level)
-    facet_str <- ifelse(level=="year", paste0(natval, "~."), paste0(natval, "~sex"))
+    facet_str <- ifelse(level=="year", paste0("~",natval), paste0(natval, "~sex"))
     groupvar <- ifelse(level=="agename", level, "1")
     
     summed <- pop[, list(deaths=sum(deaths), pop=sum(pop)), by=eval(paste0(natval, level_str))]
@@ -48,6 +49,10 @@ for (natval in c("national", "dev_status")){
       setnames(summed, "dev_status", "nat_level")
       bothsummed <- rbind(bothsummed, summed)
       setnames(summed, "nat_level", "dev_status")
+    }else if (natval=="ag_status" & level=="sex"){
+      setnames(summed, "ag_status", "nat_level")
+      bothsummed <- rbind(bothsummed, summed)
+      setnames(summed, "nat_level", "ag_status")
     }
     
     for (typeval in c("deaths", "rate")){
@@ -59,26 +64,31 @@ for (natval in c("national", "dev_status")){
                          title="Suicides Over Time",
                          ylabel=labelvar)
       print(image)
+      
     }
   } 
   dev.off()
 }
 
+
+#plot metrics by sex, side-by-side
+pdf(file=paste0(main_dir, "plots/summary/all_metrics_by_sex.pdf"), width=14, height=8)
+bothsummed$nat_level <- factor(bothsummed$nat_level, levels=c("National", "Less Developed", "More Developed", "Agricultural", "Non-Agricultural"))
+bothsummed[, year:=as.numeric(as.character(year))]
 for (typeval in c("deaths", "rate")){
   labelvar <- ifelse(typeval=="deaths", "Deaths", paste0("Mortality Rate Per ", rate_per))
-  
   image <- ggplot(bothsummed, aes_string(x="year", y=typeval, color="sex", group="sex")) +
             geom_line(size=2) + 
             facet_grid(.~nat_level)+
             stat_smooth(method="lm") +
-            #scale_x_continuous(breaks=c(2001, 2006, 2010), minor_breaks=c(2002,2003,2004,2005,2007,2008,2009)) +
+            scale_x_continuous(breaks=seq(2001, 2010,2), minor_breaks=seq(2002,2010,2)) +
             labs(title = paste("Suicide", labelvar, "over Time"),
                  x="Year",
                  y=labelvar)
   image <- image + theme(legend.position="bottom", legend.title=element_blank())
   print(image)
 }
-
+dev.off()
 
 #plot showing national-level pop, deaths, and rates side-by-side
 #need to multiplot to show zero in scale of deaths :/
@@ -90,7 +100,8 @@ idx <- 1
 for (level in c("Deaths", "Population", "Rate")){
   image <- ggplot(summed, aes_string(x="year", y=level, group="1")) +
                 geom_line(size=2)+
-                scale_y_continuous(limits=c(0, max(summed[[level]])))
+                scale_y_continuous(limits=c(0, max(summed[[level]]))) +
+                stat_smooth(method="lm")
   allplots[[idx]] <- image
   idx <- idx+1
 }
@@ -124,6 +135,7 @@ for (name in files){
   print(name)
   load(paste0(main_dir, "clean/", name, ".rdata"))
   data[, sex := factor(sex, labels=c("Males", "Females"))]
+  data[, ag_status := ifelse(ag_state==1, "Agricultural", "Non-Agricultural")]
   data[, dev_status:= ifelse(developed==1, "More Developed", "Less Developed")]
   data[, national:="National"]
   data[, year:=as.factor(year)]
@@ -133,7 +145,8 @@ for (name in files){
   #remove age=0 
   data <-data[age!=0]
   
-  for (natval in c("national", "dev_status")){
+  for (natval in c("national", "dev_status", "ag_status")){
+    print(natval)
 
     #deaths by classification for whole country over time (collapse over sex and age)
     print("plotting by classification")
@@ -145,7 +158,7 @@ for (name in files){
       image  <- line_plot(data=summed, 
                           yvar=typeval, 
                           groupvar="classification",
-                          facet_str=paste0(".~", natval), 
+                          facet_str=paste0("~", natval), 
                           title="Suicides Over Time",
                           ylabel=labelvar)
       print(image)
@@ -161,7 +174,7 @@ for (name in files){
     #note to self: do this by state
     
     #deaths by classification for whole country over time (collapse over age, but not sex)
-    print("plotting by classification")
+    print("plotting by classification and sex")
     summed <- sumvars(data, pop, bysum=paste0(natval,",year,classification,sex"), byprop=paste0(natval,",year,sex"), byrate=paste0(natval,",year"), rate_per=rate_per)
     
     for(typeval in c("deaths", "prop")){
@@ -195,6 +208,19 @@ for (name in files){
                             ylabel=labelvar)
         print(image)
       }
+      
+      #deaths with age on the x-axis here, for 2010
+      image <- line_plot(data=summed[year==2010],
+                         xvar="agename",
+                         yvar="prop",
+                         groupvar="classification",
+                         facet_str=paste0(natval, "~sex"),
+                         title= "Reasons for Suicide: Proportions by Age, 2010",
+                         xlabel="",
+                         ylabel="Proportion")
+              
+      print(image)
+      
       dev.off()
     }
   

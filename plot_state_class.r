@@ -38,7 +38,7 @@ pop <- pop[age!=0]
 
 rate_per <- 100000
 
-pdf(paste0(main_dir, "plots/summary/states_by_class_allprops.pdf"), width=14, height=8)
+pdf(paste0(main_dir, "plots/summary/states_by_class.pdf"), width=14, height=8)
 
 for (name in files){
   print(name)
@@ -64,11 +64,12 @@ for (name in files){
     
     for (eachval in unique(summed[[levelval]])){
       print(eachval)
-      #yvar <- ifelse(name=="means", "rate", "prop")
-      yvar <- "prop"
+      yvar <- ifelse(name=="means", "rate", "prop")
+      #yvar <- "prop"
       
       image <- ggplot(summed[J(eachval)], aes_string(x="year", y=yvar, group="classification"))+
         geom_line(aes(color=classification), alpha=0.7, size=2) +
+        #stat_smooth(aes(color=classification),method="lm")+
         facet_wrap(~state, scales="free_y") +
         scale_x_continuous(breaks=c(2001, 2006, 2010), minor_breaks=c(2002,2003,2004,2005,2007,2008,2009)) +
         labs(title=paste("Death", capitalize(yvar), "by", capitalize(name), eachval),

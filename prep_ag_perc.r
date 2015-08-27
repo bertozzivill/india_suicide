@@ -15,7 +15,7 @@ rm(list=ls())
 main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
 ag_dir <- paste0(main_dir, "clean/agriculture/")
 
-land_typeval <- "Total"
+land_typeval <- "Rural"
 
 #import data
 loc<- fread(paste0(ag_dir, "../loc.csv"))
@@ -61,7 +61,7 @@ image <- map_plot(mapdata,
                   title=paste("Percent of", land_typeval, "Working Population in Agriculture, by  Year"),
                   colors=redgreencolors)
 print(image)
-dev.off()
+
 
 #reshape
 ag_pop[, year_str:=paste0("perc_", year)]
@@ -77,8 +77,8 @@ perc <- map_plot(mapdata,
                   colors=redgreencolors)
 print(perc)
 
-#ARBITRARY: Say people are in a "high-agriculture" state if perc_ag in 2011 >20
-wider[, ag_state:=ifelse(perc_2001>23.2, 1,0)]
+#Pick states as 'agricultural' if they have more than mean ag_perc in BOTH 2001 and 2010
+wider[, ag_state:=ifelse(perc_2001>mean(perc_2001) & perc_2011>mean(perc_2011), 1,0)]
 wider[, label:="Agriculture State?"]
 
 mapdata <- merge(wider, india_map, by="state_id", allow.cartesian=T)
@@ -88,4 +88,14 @@ binary <- map_plot(mapdata,
                  outline=T,
                  title=paste("Agriculture States for Analysis"),
                  colors=c("white", "red"))
+binary <- binary + theme(legend.position="none")
 print(binary)
+
+dev.off()
+
+#merge onto loc, and save
+ag_indic <- wider[, list(state, ag_state)]
+loc <- merge(loc, ag_indic, by="state", all=T)
+loc[is.na(ag_state), ag_state:=0]
+
+write.csv(loc, file=paste0(ag_dir, "../loc.csv"), row.names=F)

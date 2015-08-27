@@ -6,6 +6,7 @@
 ## Output:
 ##      --deaths: a cleaned data.table
 ##############################################################################################################################
+library(gdata)
 
 ##function to get rates and proportions from dataset
 sumvars <- function(data, pop, bysum, byprop, byrate, rate_per){
@@ -26,7 +27,7 @@ gg_color_hue <- function(n) {
 line_plot <- function(data, yvar, facet_str, title, pal="Set2", ylabel, xvar="year", groupvar="1",  xlabel="Year"){
   image <- ggplot(data, aes_string(x=xvar, y=yvar, group=groupvar)) +
           geom_line(aes_string(color=groupvar), size=3) +
-          facet_grid(as.formula(facet_str)) +
+          facet_wrap(as.formula(facet_str)) +
           labs(title=title,
                x=xlabel,
                y=ylabel)
