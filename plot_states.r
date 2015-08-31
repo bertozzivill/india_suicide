@@ -77,6 +77,7 @@ for (level in c("national", "sex", "agename")){
                 facet_wrap(~state, scales="free_y")+
                 stat_smooth(method="lm") +
                 guides(color=F)+
+                scale_color_manual(values=colors)+
                 scale_x_continuous(breaks=c(2001, 2006, 2010), minor_breaks=c(2002,2003,2004,2005,2007,2008,2009)) +
                 labs(title = paste("Suicide", labelvar, "over Time,", groupname),
                      x="Year",
@@ -93,13 +94,13 @@ for (level in c("national", "sex", "agename")){
       print("map")
       mapdata <- merge(summed[J(groupname)], india_map, by="state_id", allow.cartesian=T)
       mapdata <- mapdata[year %in% seq(2001, 2009, 2)]
-      mapdata <- mapdata[state!="Sikkim"]
+      #mapdata <- mapdata[state!="Sikkim"]
       setkeyv(mapdata, level)
       facet_str <- ifelse(groupvar=="sex", "sex~year", "~year")
       image <- ggplot(mapdata[J(groupname)]) +
               geom_polygon(aes_string(x="long", y="lat", group="group", fill=typeval)) +
               facet_grid(as.formula(facet_str)) +
-              scale_fill_gradientn(colours=rev(redgreencolors)) +
+              scale_fill_gradientn(colours=brewer.pal(7, "YlOrBr")[2:7]) +
               scale_x_continuous("", breaks=NULL) +
               scale_y_continuous("", breaks=NULL) +
               coord_fixed(ratio=1) +
@@ -165,108 +166,3 @@ dev.off()
 
 
 ##################################################################
-
-###########################################################
-## Plots on the year-sex-age level, by classification
-#########################################################
-for (name in files){
-  print(name)
-  load(paste0(main_dir, "clean/", name, ".rdata"))
-  data[, sex := factor(sex, labels=c("Males", "Females"))]
-  data[, dev_status:= ifelse(developed==1, "More Developed", "Less Developed")]
-  data[, national:="National"]
-  data[, year:=as.factor(year)]
-  data[, age:=as.factor(age)]
-  data[, classification:=as.factor(classification)]
-  
-  #remove age=0 
-  data <-data[age!=0]
-  
-  for (natval in c("national", "dev_status")){
-    
-    #deaths by classification for whole country over time (collapse over sex and age)
-    print("plotting by classification")
-    summed <- sumvars(data, pop, bysum=paste0(natval,",year,classification"), byprop=paste0(natval,",year"), byrate=paste0(natval,",year"), rate_per=rate_per)
-    
-    for(typeval in c("deaths", "prop")){
-      labelvar<-ifelse(typeval=="deaths", "Deaths", ifelse(typeval=="prop", "Proportion", "Mortality Rate"))
-      pdf(file=paste0(main_dir, "plots/", name, "/", natval, "/", typeval, "_by_class.pdf"), width=14, height=8)
-      image  <- line_plot(data=summed, 
-                          yvar=typeval, 
-                          groupvar="classification",
-                          facet_str=paste0(".~", natval), 
-                          title="Suicides Over Time",
-                          ylabel=labelvar)
-      print(image)
-      dev.off()
-    }
-    
-    image + stat_smooth(method="lm")
-    
-    #change in proportions over time: simple regression
-    summed[, year:=as.numeric(as.character(year))]
-    regress <- lm(prop ~ year + classification, data=summed)
-    fes <- regress$coefficients
-    #note to self: do this by state
-    
-    #deaths by classification for whole country over time (collapse over age, but not sex)
-    print("plotting by classification")
-    summed <- sumvars(data, pop, bysum=paste0(natval,",year,classification,sex"), byprop=paste0(natval,",year,sex"), byrate=paste0(natval,",year"), rate_per=rate_per)
-    
-    for(typeval in c("deaths", "prop")){
-      labelvar<-ifelse(typeval=="deaths", "Deaths", ifelse(typeval=="prop", "Proportion", "Mortality Rate"))
-      pdf(file=paste0(main_dir, "plots/", name, "/", natval, "/", typeval, "_by_class_sex.pdf"), width=14, height=8)
-      image  <- line_plot(data=summed, 
-                          yvar=typeval, 
-                          groupvar="classification",
-                          facet_str=paste0(natval, "~sex"), 
-                          title="Suicides Over Time",
-                          ylabel=labelvar)
-      print(image)
-      dev.off()
-    }
-    
-    #deaths by age for whole country over time (by sex and classification)
-    print("plotting by classification, sex, and age")
-    summed <- sumvars(data, pop, bysum=paste0(natval,",year,classification,sex,age"), byprop=paste0(natval,",year,age,sex"), byrate=paste0(natval,",year,sex,age"), rate_per=rate_per)
-    setkeyv(summed, c("age", natval))
-    
-    for(typeval in c("deaths", "prop")){
-      labelvar<-ifelse(typeval=="deaths", "Deaths", ifelse(typeval=="prop", "Proportion", "Mortality Rate"))
-      
-      pdf(file=paste0(main_dir, "plots/", name, "/", natval ,"/", typeval, "_class_loop_age.pdf"), width=14, height=8)
-      for(ageval in unique(summed$age)){
-        image  <- line_plot(data=summed[J(ageval)], 
-                            yvar=typeval, 
-                            groupvar="classification",
-                            facet_str=paste0(natval, "~sex"), 
-                            title=paste("Deaths by", capitalize(name), ",", ageval),
-                            ylabel=labelvar)
-        print(image)
-      }
-      dev.off()
-    }
-    
-    #deaths by classification for whole country over time (by sex and age)
-    print("plotting by classification, sex, and age")
-    summed <- sumvars(data, pop, bysum=paste0(natval,",year,classification,sex,age"), byprop=paste0(natval,",year,sex,classification"), byrate=paste0(natval,",year,sex,age"), rate_per=rate_per)
-    setkeyv(summed, "classification")
-    
-    for(typeval in c("deaths", "prop")){
-      labelvar<-ifelse(typeval=="deaths", "Deaths", ifelse(typeval=="prop", "Proportion", "Mortality Rate"))
-      
-      pdf(file=paste0(main_dir, "plots/", name, "/",natval, "/", typeval, "_age_loop_class.pdf"), width=14, height=8)
-      for(class in unique(summed$classification)){
-        image  <- line_plot(data=summed[J(class)], 
-                            yvar=typeval, 
-                            groupvar="age",
-                            facet_str=paste0(natval, "~sex"), 
-                            title=paste("Deaths by", capitalize(name), ",", class),
-                            ylabel=labelvar)
-        
-        print(image)
-      }
-      dev.off()
-    }
-  }
-}

@@ -107,42 +107,20 @@ states_sex[, rate:= (deaths/pop)*100000]
 states_sex_age <- pop[, list(deaths=sum(deaths), pop=sum(pop)), by="year,state_id,state,sex,age"]
 states_sex_age[, rate:= (deaths/pop)*100000]
 
-no_sikkim <- copy(states)
-no_sikkim[state=="Sikkim", rate:=NA]
-
-sikkim <- states[state=="Sikkim"]
-sikkim[, year:=as.numeric(as.character(year))]
-
 pdf(file=paste0(main_dir, "plots/summary/rates_2001_2010.pdf"), width=14, height=8)
 mapdata <- merge(states, india_map, by="state_id", allow.cartesian=T)
 #map of suicide rates for 2001 and 2010, next to each other
 image_1 <- ggplot(mapdata[year %in% c(2001, 2010)]) +
         geom_polygon(aes_string(x="long", y="lat", group="group", fill="rate")) +
         facet_wrap(~year) +
-        scale_fill_gradientn(colours=rev(redgreencolors)) +
+        scale_fill_gradientn(colours=brewer.pal(7, "YlOrBr")[2:7]) +
         scale_x_continuous("", breaks=NULL) +
         scale_y_continuous("", breaks=NULL) +
         coord_fixed(ratio=1) +
         guides(fill=guide_colourbar(title="", barheight=15)) +
-        labs(title = "Suicide Rate Per 100,000, Including Sikkim") +
+        labs(title = "Suicide Rate Per 100,000") +
         theme_bw(base_size=15)
 print(image_1)
 graphics.off()
 
-mapdata <- merge(no_sikkim, india_map, by="state_id", allow.cartesian=T)
-#map of suicide rates for 2001 and 2010, next to each other
-image_2 <- ggplot(mapdata[year %in% c(2001, 2010)]) +
-  geom_polygon(aes_string(x="long", y="lat", group="group", fill="rate")) +
-  facet_grid(.~year) +
-  scale_fill_gradientn(colours=rev(redgreencolors)) +
-  scale_x_continuous("", breaks=NULL) +
-  scale_y_continuous("", breaks=NULL) +
-  coord_fixed(ratio=1) +
-  guides(fill=guide_colourbar(title="", barheight=15)) +
-  labs(title = "Suicide Rate Per 100,000, Excluding Sikkim") +
-  theme_bw(base_size=15)
-
-
-
-multiplot(image_1, image_2, cols=1)
 

@@ -31,11 +31,15 @@ line_plot <- function(data, yvar, facet_str, title, pal="Set2", ylabel, xvar="ye
           labs(title=title,
                x=xlabel,
                y=ylabel)
-  if (length(unique(data[[groupvar]]))>8){
+  n <- length(unique(data[[groupvar]]))
+  if (n>8){
+    colors <- c(brewer.pal(8, "Set2"), "#A067B1")
     pal<-"Paired"
+  }else{
+    colors=brewer.pal(n, "Set2")
   }
   if (groupvar!="1"){
-    image <- image + scale_color_brewer(palette=pal)
+    image <- image + scale_color_manual(values=colors)
   }else{
     image <- image + guides(color=FALSE)
   }
@@ -47,7 +51,7 @@ bar_plot <- function(data, yvar, fillvar, facet_str, title, pal="Set2", ylabel, 
   image <- ggplot(data, aes_string(x=xvar, y=yvar, fill=fillvar)) +
             geom_bar(stat="identity") +
             facet_grid(as.formula(facet_str)) +
-            scale_fill_brewer(palette=pal) +
+            scale_fill_manual(values = brewer.pal(length(unique(data[[groupvar]])), pal)) +
             labs(title=title,
                  x=xlabel,
                  y=ylabel)

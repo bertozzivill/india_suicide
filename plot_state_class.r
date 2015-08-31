@@ -53,6 +53,15 @@ for (name in files){
   #remove age=0
   data <-data[age!=0]
   
+  #set colors 
+  n <- length(unique(data$classification))
+  if (n>8){
+    colors <- brewer.pal(8, "Set2")
+    colors <- c(colors, "#A067B1")
+  }else{
+    colors <- brewer.pal(n, "Set2")
+  } 
+  
   level_base <- "state"
   for (levelval in c("year", "sex", "agename")){
     print(levelval)
@@ -68,9 +77,10 @@ for (name in files){
       #yvar <- "prop"
       
       image <- ggplot(summed[J(eachval)], aes_string(x="year", y=yvar, group="classification"))+
-        geom_line(aes(color=classification), alpha=0.7, size=2) +
+        geom_line(aes(color=classification), size=2) +
         #stat_smooth(aes(color=classification),method="lm")+
         facet_wrap(~state, scales="free_y") +
+        scale_color_manual(values=colors)+
         scale_x_continuous(breaks=c(2001, 2006, 2010), minor_breaks=c(2002,2003,2004,2005,2007,2008,2009)) +
         labs(title=paste("Death", capitalize(yvar), "by", capitalize(name), eachval),
              x="Year",
