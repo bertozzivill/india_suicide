@@ -57,7 +57,7 @@ for (name in files){
   n <- length(unique(data$classification))
   if (n>8){
     colors <- brewer.pal(8, "Set2")
-    colors <- c(colors, "#A067B1")
+    colors <- c(colors, "#A067B1", "#31A354")
   }else{
     colors <- brewer.pal(n, "Set2")
   } 
@@ -73,8 +73,8 @@ for (name in files){
     
     for (eachval in unique(summed[[levelval]])){
       print(eachval)
-      yvar <- ifelse(name=="means", "rate", "prop")
-      #yvar <- "prop"
+      #yvar <- ifelse(name=="means", "rate", "prop")
+      yvar <- "prop"
       
       image <- ggplot(summed[J(eachval)], aes_string(x="year", y=yvar, group="classification"))+
         geom_line(aes(color=classification), size=2) +

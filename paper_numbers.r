@@ -123,4 +123,16 @@ image_1 <- ggplot(mapdata[year %in% c(2001, 2010)]) +
 print(image_1)
 graphics.off()
 
+pdf(file=paste0(main_dir, "plots/summary/age_15_morewomen.pdf"), width=14, height=8)
+  image <- ggplot(states_sex_age[state %in% c("Madhya Pradesh", "Uttar Pradesh") & age==15], aes(x=year, y=rate, group=sex)) +
+            geom_line(aes(color=sex), size=2) +
+            stat_smooth(method=lm, aes(color=sex), se=F) +
+            facet_wrap(~state) +
+            theme(legend.position="bottom", legend.title=element_blank()) +
+            labs(title="Suicide Rate per 100,000, Age 15-29, Madhya Pradesh and Uttar Pradesh",
+                 x="Year",
+                 y="Suicides per 100,000")
 
+  print(image)
+            
+graphics.off()

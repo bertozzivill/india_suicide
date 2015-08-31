@@ -33,8 +33,7 @@ line_plot <- function(data, yvar, facet_str, title, pal="Set2", ylabel, xvar="ye
                y=ylabel)
   n <- length(unique(data[[groupvar]]))
   if (n>8){
-    colors <- c(brewer.pal(8, "Set2"), "#A067B1")
-    pal<-"Paired"
+    colors <- c(brewer.pal(8, "Set2"), "#A067B1", "#31A354")
   }else{
     colors=brewer.pal(n, "Set2")
   }
