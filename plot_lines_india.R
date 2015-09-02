@@ -10,6 +10,7 @@ library(data.table)
 library(reshape2)
 library(ggplot2)
 library(Hmisc)
+library(RColorBrewer)
 options(scipen=10)
 
 rm(list=ls())
@@ -133,6 +134,7 @@ dev.off()
 #########################################################
 for (name in files){
   print(name)
+  titlename <- ifelse(name=="causes", "reason", name)
   load(paste0(main_dir, "clean/", name, ".rdata"))
   data[, sex := factor(sex, labels=c("Males", "Females"))]
   data[, ag_status := ifelse(ag_state==1, "Agricultural", "Non-Agricultural")]
@@ -159,7 +161,7 @@ for (name in files){
                           yvar=typeval, 
                           groupvar="classification",
                           facet_str=paste0("~", natval), 
-                          title="Suicides Over Time",
+                          title=paste("Suicides by", capitalize(titlename), "Over Time"),
                           ylabel=labelvar)
       print(image)
       dev.off()
@@ -184,7 +186,7 @@ for (name in files){
                           yvar=typeval, 
                           groupvar="classification",
                           facet_str=paste0(natval, "~sex"), 
-                          title="Suicides Over Time",
+                          title=paste("Suicides by", capitalize(titlename), "Over Time"),
                           ylabel=labelvar)
       print(image)
       dev.off()
@@ -204,7 +206,7 @@ for (name in files){
                             yvar=typeval, 
                             groupvar="classification",
                             facet_str=paste0(natval, "~sex"), 
-                            title=paste("Deaths by", capitalize(name), ",", ageval),
+                            title=paste("Deaths by", capitalize(titlename), ",", ageval),
                             ylabel=labelvar)
         print(image)
       }
@@ -215,7 +217,7 @@ for (name in files){
                          yvar="prop",
                          groupvar="classification",
                          facet_str=paste0(natval, "~sex"),
-                         title= "Reasons for Suicide: Proportions by Age, 2010",
+                         title= paste(capitalize(titlename), "of Suicide: Proportions by Age, 2010"),
                          xlabel="",
                          ylabel="Proportion")
               
@@ -238,7 +240,7 @@ for (name in files){
                             yvar=typeval, 
                             groupvar="age",
                             facet_str=paste0(natval, "~sex"), 
-                            title=paste("Deaths by", capitalize(name), ",", class),
+                            title=paste("Deaths by", capitalize(titlename), ",", class),
                             ylabel=labelvar)
         
         print(image)
