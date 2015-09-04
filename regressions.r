@@ -144,4 +144,4 @@ regressions <- all_outputs[is.na(agename)]
 regressions$agename <- NULL
 
 save(regressions, file=paste0(main_dir, "outputs/regressions.rdata"))
-
+save(data, file=paste0(main_dir, "outputs/all_deaths.rdata"))
