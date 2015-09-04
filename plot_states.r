@@ -75,9 +75,8 @@ for (level in c("national", "sex", "agename")){
       image <- ggplot(summed[J(groupname)], aes_string(x="year", y=typeval, color=groupvar)) +
                 geom_line(size=2) + 
                 facet_wrap(~state, scales="free_y")+
-                stat_smooth(method="lm") +
+                stat_smooth(method="lm", se=F) +
                 guides(color=F)+
-                scale_color_manual(values=colors)+
                 scale_x_continuous(breaks=c(2001, 2006, 2010), minor_breaks=c(2002,2003,2004,2005,2007,2008,2009)) +
                 labs(title = paste("Suicide", labelvar, "over Time,", groupname),
                      x="Year",

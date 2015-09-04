@@ -81,7 +81,7 @@ for (typeval in c("deaths", "rate")){
   image <- ggplot(bothsummed, aes_string(x="year", y=typeval, color="sex", group="sex")) +
             geom_line(size=2) + 
             facet_grid(.~nat_level)+
-            stat_smooth(method="lm") +
+            stat_smooth(method="lm", se=F) +
             scale_x_continuous(breaks=seq(2001, 2010,2), minor_breaks=seq(2002,2010,2)) +
             labs(title = paste("Suicide", labelvar, "over Time"),
                  x="Year",
@@ -102,7 +102,7 @@ for (level in c("Deaths", "Population", "Rate")){
   image <- ggplot(summed, aes_string(x="year", y=level, group="1")) +
                 geom_line(size=2)+
                 scale_y_continuous(limits=c(0, max(summed[[level]]))) +
-                stat_smooth(method="lm")
+                stat_smooth(method="lm", fe=F)
   allplots[[idx]] <- image
   idx <- idx+1
 }

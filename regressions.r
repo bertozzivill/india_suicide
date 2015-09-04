@@ -139,7 +139,9 @@ all_outputs <- all_outputs[, list(data_type, geog_status, geog_val, sex, agename
 new_alpha <- 0.05/nrow(all_outputs)
 all_outputs[sigma<new_alpha & year_beta!=0]
 
-regressions <- copy(all_outputs)
+#for now, don't include age
+regressions <- all_outputs[is.na(agename)]
+regressions$agename <- NULL
 
 save(regressions, file=paste0(main_dir, "outputs/regressions.rdata"))
 

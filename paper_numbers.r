@@ -14,7 +14,7 @@ library(RColorBrewer)
 options(scipen=10)
 
 
-rm(list=ls())
+#rm(list=ls())
 main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
 
 #prep and format shapefils
