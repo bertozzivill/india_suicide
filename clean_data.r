@@ -35,7 +35,7 @@ files <- c("causes", "education", "means", "profession", "social_status")
 shared_colnames <- c("state", "year",  "category_label", "category", "classification_label", "classification")
 
 loc<- fread(paste0(main_dir, "clean/loc.csv"))
-agenames <- fread(paste0(main_dir, "agenames.csv"))
+agenames <- fread(paste0(main_dir, "clean/agenames.csv"))
 
 alldata <- lapply(files, function(name){
   print(name)

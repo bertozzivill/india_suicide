@@ -36,7 +36,7 @@ data <- data[geog_val %in% geog_list & data_type!="profession", list(deaths=sum(
 
 data$geog_val <- factor(data$geog_val, levels=geog_list)
 
-pdf(paste0(main_dir, "plots/state_and_india_plots_for_rakhi.pdf"), width=14, height=8)
+pdf(paste0(main_dir, "plots/summary/state_and_india_plots_for_rakhi.pdf"), width=14, height=8)
 #plot rates by geography and sex
 rates <- data[data_type=="all"]
 rates[, rate:=(deaths/pop)*100000]

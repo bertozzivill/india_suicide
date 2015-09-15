@@ -11,7 +11,7 @@ library(reshape2)
 rm(list=ls())
 main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
 
-agenames <- fread(paste0(main_dir, "agenames.csv"))
+agenames <- fread(paste0(main_dir, "clean/agenames.csv"))
 
 yearvals <- 2001:2010
 data <- fread(paste0(main_dir, "raw/india_pop.csv"))
