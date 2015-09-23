@@ -75,3 +75,7 @@ dev_age <- sumvars(data, pop, bysum=paste0(bystr, ",classification"), byprop=bys
 bystr <- "year,dev_status,sex"
 dev_sex <- sumvars(data, pop, bysum=paste0(bystr, ",classification"), byprop=bystr, byrate=bystr, rate_per=rate_per)
 
+#count and rate of suicides by state
+bystr <- "year,state"
+statewise <- sumvars(data, pop, bysum=paste0(bystr, ",classification"), byprop=bystr, byrate=bystr, rate_per=rate_per)
+

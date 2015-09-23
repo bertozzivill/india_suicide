@@ -82,4 +82,7 @@ ag <- sumvars(data, pop, bysum=paste0(bystr, ",classification"), byprop=bystr, b
 
 #count and rate of suicides ag-wise, by sex
 bystr <- "year,ag_status,sex"
-ag_sex <- sumvars(data, pop, bysum=paste0(bystr, ",classification"), byprop=bystr, byrate=bystr, rate_per=rate_per)
+
+#count and rate of suicides ag-wise, by sex
+bystr <- "year,state,sex"
+statewise <- sumvars(data, pop, bysum=paste0(bystr, ",classification"), byprop=bystr, byrate=bystr, rate_per=rate_per)

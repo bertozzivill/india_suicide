@@ -33,6 +33,7 @@ load(paste0(main_dir, "clean/pop.rdata"))
 pop[, year:=as.factor(year)]
 pop[, age:=as.factor(age)]
 pop[, dev_status:= ifelse(developed==1, "More Developed", "Less Developed")]
+pop[, ag_status := ifelse(ag_state==1, "Agricultural", "Non-Agricultural")]
 pop <- pop[age!=0]
 
 rate_per <- 100000
@@ -59,6 +60,10 @@ national <- sumvars(data, pop, bysum=paste0(bystr, ",classification"), byprop=by
 #count and rate of suicides nationally by sex
 bystr <- "year,sex"
 national_sex <- sumvars(data, pop, bysum=paste0(bystr, ",classification"), byprop=bystr, byrate=bystr, rate_per=rate_per)
+
+#count and rate of suicides nationally by sex
+bystr <- "year,age"
+national_age <- sumvars(data, pop, bysum=paste0(bystr, ",classification"), byprop=bystr, byrate=bystr, rate_per=rate_per)
 
 #count and rate of suicides nationally by sex and age
 bystr <- "year,sex,agename"
@@ -87,5 +92,15 @@ dev.off()
 #count and rate of suicides dev-wise, by sex
 bystr <- "year,dev_status,sex"
 dev_sex <- sumvars(data, pop, bysum=paste0(bystr, ",classification"), byprop=bystr, byrate=bystr, rate_per=rate_per)
+
+#count and rate of suicides by ag status
+bystr <- "year,ag_status"
+ag <- sumvars(data, pop, bysum=paste0(bystr, ",classification"), byprop=bystr, byrate=bystr, rate_per=rate_per)
+
+
+#count and rate of suicides by state
+bystr <- "year,state"
+statewise <- sumvars(data, pop, bysum=paste0(bystr, ",classification"), byprop=bystr, byrate=bystr, rate_per=rate_per)
+
 
 
