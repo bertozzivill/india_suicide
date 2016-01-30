@@ -24,6 +24,7 @@ data[!geog_status %in% c("national", "state"), geog_val:= paste(geog_val, "State
 
 
 rate_per <- 100000
+linesize <- 2
 
 pdf(paste0(main_dir, "../writing_and_papers/paper/figures/paper_figs.pdf"), width=14, height=8)
 
@@ -37,7 +38,7 @@ all_rates$geog_val <- factor(all_rates$geog_val, levels=c("National", "Less Deve
 
 
 all_rates_figure <- ggplot(all_rates, aes(x=year, y=rate, group=sex, color=sex))+
-            geom_line(size=3) +
+            geom_line(size=linesize) +
             facet_grid(~geog_val) +
             scale_x_continuous(breaks=c(seq(2001, 2009, 2), 2010), minor_breaks=seq(2002,2010,2)) +
             stat_smooth(method="lm", se=F, color="black") +
@@ -62,7 +63,7 @@ reason_props$geog_val <- factor(reason_props$geog_val, levels=c("National", "Les
 reason_props[, classification:= factor(classification, levels=c("Personal/Social", "Health", "Economic", "Marriage", "Other", "Unknown"))]
 
 reason_props_figure <- ggplot(reason_props, aes(x=year, y=perc, group=classification, color=classification)) +
-            geom_line(size=3) +
+            geom_line(size=linesize) +
             facet_grid(~geog_val) +
             scale_color_manual(values=brewer.pal(6, "Set2")) +
             scale_x_continuous(breaks=c(seq(2001, 2009, 2), 2010), minor_breaks=seq(2002,2010,2)) +
@@ -86,7 +87,7 @@ means_props$geog_val <- factor(means_props$geog_val, levels=c("National", "Less 
 means_props[, classification:= factor(classification, levels=c("Hanging", "Poison/Overdose", "Jumping", "Drowning", "Self-Immolation", "Other"))]
 
 means_props_figure <- ggplot(means_props, aes(x=year, y=perc, group=classification, color=classification)) +
-            geom_line(size=3) +
+            geom_line(size=linesize) +
             facet_grid(~geog_val) +
             scale_color_manual(values=brewer.pal(6, "Set2")) +
             theme(legend.title=element_blank(),
@@ -111,7 +112,7 @@ prof_props[, sum_deaths:=sum(deaths), by="geog_val,year"]
 prof_props[, perc:=(deaths/sum_deaths)*100]
 
 prof_props_figure <- ggplot(prof_props, aes(x=year, y=perc, group=classification, color=as.character(classification))) +
-              geom_line(size=3) +
+              geom_line(size=linesize) +
               scale_color_manual(values=prof_colors) +
               theme(legend.title=element_blank())+
               scale_x_continuous(breaks=c(seq(2001, 2009, 2), 2010), minor_breaks=seq(2002,2010,2)) +
@@ -129,7 +130,7 @@ state_rates <- data[data_type=="all"& geog_status=="state", list(deaths=sum(deat
 state_rates[, rate:=(deaths/pop)*rate_per]
 
 state_rates_figure <- ggplot(state_rates, aes(x=year, y=rate, group=1)) +
-  geom_line(size=3, color=gg_color_hue(2)[[2]]) +
+  geom_line(size=linesize, color=gg_color_hue(2)[[2]]) +
   facet_wrap(~geog_val, scales="free_y") +
   scale_x_continuous(breaks=c(2001, 2006, 2010), minor_breaks=c(2002,2003,2004,2005,2007,2008,2009)) +
   stat_smooth(method="lm", se=F, color="black") +
@@ -151,7 +152,7 @@ age_means_props[, perc:=(deaths/sum_deaths)*100]
 age_means_props[, classification:= factor(classification, levels=c("Hanging", "Poison/Overdose", "Jumping", "Drowning", "Self-Immolation", "Other"))]
 
 age_means_props_figure <- ggplot(age_means_props, aes(x=agename, y=perc, group=classification, color=classification)) +
-  geom_line(size=3) +
+  geom_line(size=linesize) +
   facet_grid(~sex) +
   scale_color_manual(values=brewer.pal(6, "Set2")) +
   theme(legend.title=element_blank())+
@@ -170,7 +171,7 @@ sex_prof_props[, sum_deaths:=sum(deaths), by="geog_val,year,sex"]
 sex_prof_props[, perc:=(deaths/sum_deaths)*100]
 
 sex_prof_props_figure <- ggplot(sex_prof_props, aes(x=year, y=perc, group=classification, color=as.character(classification))) +
-  geom_line(size=3) +
+  geom_line(size=linesize) +
   facet_grid(~sex) +
   scale_color_manual(values=prof_colors) +
   theme(legend.title=element_blank())+
@@ -191,7 +192,7 @@ ag_prof_props[, sum_deaths:=sum(deaths), by="geog_val,year"]
 ag_prof_props[, perc:=(deaths/sum_deaths)*100]
 
 ag_prof_props_figure <- ggplot(ag_prof_props, aes(x=year, y=perc, group=classification, color=as.character(classification))) +
-  geom_line(size=3) +
+  geom_line(size=linesize) +
   facet_grid(~geog_val) +
   scale_color_manual(values=prof_colors) +
   scale_x_continuous(breaks=c(seq(2001, 2009, 2), 2010), minor_breaks=seq(2002,2010,2)) +
