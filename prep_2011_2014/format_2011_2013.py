@@ -26,16 +26,21 @@ def clean_data(in_dir, info):
 			find_first = [x[0:5]=='"1.0"' for x in subtable].index(True)
 			list_format = [x.split(",") for x in subtable[find_first:]]
 		except ValueError: #sometimes the list is even more scrambled than usual
-			find_first = [x[3:8]=='"1.0"' for x in subtable].index(True)
-			list_format = [x.split(",") for x in subtable[find_first:]]
 
-			#move rows 0-29 up one space
-			for idx in range(0, 30):
-				list_format[idx].pop(0)
-			#remove second space in rows 30-39
-			for idx in range(30, 39):
-				list_format[idx].pop(1)
+			try:
+				find_first = [x[0:5]=='"1   ' for x in subtable].index(True) #table 2.14, subtable 9
+				list_format = [x.split(",") for x in subtable[find_first:]]
 
+			except ValueError:
+				find_first = [x[3:8]=='"1.0"' for x in subtable].index(True)
+				list_format = [x.split(",") for x in subtable[find_first:]]
+
+				#move rows 0-29 up one space
+				for idx in range(0, 30):
+					list_format[idx].pop(0)
+				#remove second space in rows 30-39
+				for idx in range(30, 39):
+					list_format[idx].pop(1)
 
 		#remove unwanted rows
 		for idx in sorted(info.remove_rows, reverse=True):
@@ -44,6 +49,16 @@ def clean_data(in_dir, info):
 			except IndexError:
 				pass
 
+		#adjust for unsplit name/value pairs
+		if list_format[0][0]=='"1     ANDHRA PRADESH"':
+			for idx in range(len(list_format)):
+				pattern = '("[0-9]{1,2})\s+([A-Z]+.*")'
+				split = re.match(pattern, list_format[idx][0]).groups()
+
+				list_format[idx][0] = split[0] + '.0"'
+				list_format[idx].insert(1, '"'+split[1])
+
+		#remove any trailing unwanted rows
 		info.length=int(info.length)
 		if len(list_format) > info.length:
 			list_format = list_format[0:info.length]
@@ -56,16 +71,19 @@ def clean_data(in_dir, info):
 			list_format[34][0] = '"35.0"'
 			list_format[34].insert(1,'"PUDUCHERRY"')
 
+		if table_type=="state" and list_format[28][0]!='"29.0"':
+			list_format[28].insert(0, '"29.0"')
+			list_format[28][1] = '"A & N ISLANDS"'
+
 		if table_type=="profession":
 			for idx in [2,3,4,8,9,10,11]:
 				list_format[idx].insert(0, "'99'")
 
 		subtable = pd.DataFrame(list_format)
-		#remove empty columns, and column 0
+		#remove column 0
 		subtable.drop(0, axis=1, inplace=True)
-		for col in subtable.columns:
-			if set(subtable[col])=={'""'}:
-				subtable.drop(col, axis=1, inplace=True)
+
+		
 
 		#convert strings to integers, rename identifying column
 		subtable = subtable.applymap(ast.literal_eval)
@@ -83,9 +101,10 @@ def clean_data(in_dir, info):
 tables = pd.read_csv("{main_dir}/table_names.csv".format(main_dir=main_dir))
 tables.remove_rows = tables.remove_rows.apply(ast.literal_eval)
 tables.table = tables.table.apply(ast.literal_eval)
+tables = tables[tables.year!=2014]
 
 for row_idx in range(len(tables)):
-#for row_idx in [0]:
+
 	row = tables.iloc[row_idx]
 
 	subtables = clean_data(in_dir, row)
@@ -128,16 +147,17 @@ for row_idx in range(len(tables)):
 		table.drop(col, axis=1, inplace=True)
 	table.columns = range(0, len(table.columns))
 
+	if row.contains_total: #drop last two columns, of "total" values
+		table.drop(table.columns[-2:], axis=1, inplace=True)
+
 	#now, name columns according to the values in col_types
 	these_cols = ["{one}_{two}".format(one=one, two=two) for two in colnames[col_types[1]] for one in colnames[col_types[0]]]
 
 	#if the number of columns in table is greater than the length of these_cols +2, there's
 	# a problem. otherwise, those last two cols are just totals, and we can ignore them
-	if len(table.columns) > (len(these_cols)+2):
-		HALT
+	if len(table.columns)!= (len(these_cols)):
+		raise IndexError("Table and proposed columns are not of the same length!")
 	else:
-		ending = len(these_cols)-1
-		table = table.ix[:, 0:(len(these_cols)-1)]
 		table.columns = these_cols
 
 	#save

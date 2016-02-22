@@ -26,13 +26,17 @@ for table_name in table_settings.index:
     print table_name
     this_setting = table_settings.xs(table_name)
 
-    table_name =table_name[1:-1]
+    if type(this_setting)==pd.Series:
+    	this_setting = this_setting.to_frame().transpose()
+
+    table_name =table_name[1:-1] 
 
     for year in this_setting.year:
         print year
         in_file = "{main_dir}raw/table-{table_name}_{year}.xlsx".format(main_dir=main_dir, table_name=table_name, year=year)
         out_file = "{main_dir}raw_csv/table_{table_name}_{year}".format(main_dir=main_dir, table_name=table_name, year=year)
         tables = map(str, this_setting[this_setting.year==year]["sub_tables"][0])
+
         print tables
 
         csv_from_excel(in_file, out_file, tables)
