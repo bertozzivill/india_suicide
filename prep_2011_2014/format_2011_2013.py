@@ -161,7 +161,7 @@ for row_idx in range(len(tables)):
 		table.columns = these_cols
 
 	#save
-	table.to_csv("{out_dir}/{table}_{year}.csv".format(out_dir=out_dir, table=row.table_name, year=row.year))
+	table.to_csv("{out_dir}/{table}_{year}.csv".format(out_dir=out_dir, table=row.table_name, year=row.year, index=False)
 
 	
 

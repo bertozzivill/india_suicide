@@ -98,7 +98,7 @@ for row_idx in range(len(tables)):
 	table.drop(unwanted, inplace=True)
 
 	#save
-	table.to_csv("{out_dir}/{table}_{year}.csv".format(out_dir=out_dir, table=info.table_name, year=info.year))
+	table.to_csv("{out_dir}/{table}_{year}.csv".format(out_dir=out_dir, table=info.table_name, year=info.year), index=False)
 
 
 		
