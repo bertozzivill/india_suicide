@@ -19,6 +19,7 @@ source(paste0(main_dir, "../code/plotting_fns.r"))
 source(paste0(main_dir, "../code/multiplot.r"))
 
 load(paste0(main_dir, "outputs/all_deaths.rdata"))
+
 data[, sex:=factor(sex, labels=c("Male", "Female"))]
 data[!geog_status %in% c("national", "state"), geog_val:= paste(geog_val, "States")]
 
@@ -33,14 +34,32 @@ pdf(paste0(main_dir, "../writing_and_papers/paper/figures/paper_figs.pdf"), widt
 ##          colored by sex
 ######################################################
 all_rates <- data[data_type=="all"& geog_status!="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year,sex"]
+
+#add in 2011-14 data
+load(paste0(main_dir, "clean/deaths_2011_2014_temp.rdata"))
+loc <- fread(paste0(main_dir, "clean/loc.csv"))
+new_data <- merge(new_data, loc[, list(state, ag_state)], by="state", all.x=T)
+new_data[, ag_status:=ifelse(ag_state==1, "Agricultural", "Non-Agricultural")]
+
+new_data <- melt(new_data, id.vars=c("year", "sex", "deaths", "pop"), 
+            measure.vars=c("national", "dev_status", "ag_status", "state"),
+            variable.name="geog_status", 
+            value.name="geog_val")
+
+new_data <- new_data[, list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year,sex"]
+new_data[!geog_status %in% c("national", "state"), geog_val:= paste(geog_val, "States")]
+new_data[, sex:= gsub("s", "", sex)]
+
+all_rates <- rbind(all_rates, new_data[geog_status!="state"])
+
+#calculate rates
 all_rates[, rate:=(deaths/pop)*rate_per]
 all_rates$geog_val <- factor(all_rates$geog_val, levels=c("National", "Less Developed States", "More Developed States", "Agricultural States", "Non-Agricultural States"))
-
 
 all_rates_figure <- ggplot(all_rates, aes(x=year, y=rate, group=sex, color=sex))+
             geom_line(size=linesize) +
             facet_grid(~geog_val) +
-            scale_x_continuous(breaks=c(seq(2001, 2009, 2), 2010), minor_breaks=seq(2002,2010,2)) +
+            scale_x_continuous(breaks=c(seq(2001, 2015, 2), 2014), minor_breaks=seq(2002,2014,2)) +
             stat_smooth(method="lm", se=F, color="black") +
             theme(legend.title=element_blank(), 
                   axis.text.x=element_text(angle=45, hjust=1))+
@@ -50,6 +69,32 @@ all_rates_figure <- ggplot(all_rates, aes(x=year, y=rate, group=sex, color=sex))
 
 print(all_rates_figure)
 
+#regress
+regress_all_rates <- data.table(geog_val=character(),
+                                beta=numeric())
+all_rates[,year_int:= year-2000]
+for (geog in unique(all_rates$geog_val)){
+  print(paste("regressing for", geog))
+    subset <- all_rates[geog_val==geog]
+    subset <- subset[, list(deaths=sum(deaths), pop=sum(pop)), by=c("year", "year_int")]
+    subset[, rate:=deaths/pop * rate_per]
+    out <- lm(rate~year_int, data=subset)
+    beta <- out$coefficients[["year_int"]]
+    regress_all_rates <- rbind(regress_all_rates, list(geog, beta))
+}
+
+regress_by_sex <- data.table(geog_val=character(),
+                                sex=character(),
+                                beta=numeric())
+for (geog in unique(all_rates$geog_val)){
+  print(paste("regressing for", geog))
+  for (sexval in unique(all_rates$sex)){
+    subset <- all_rates[geog_val==geog & sex==sexval]
+    out <- lm(rate~year_int, data=subset)
+    beta <- out$coefficients[["year_int"]]
+    regress_by_sex <- rbind(regress_by_sex, list(geog, sexval, beta))
+  }
+}
 
 #####################################################
 ## Figure 2: Proportions, faceted by geography,
@@ -126,13 +171,35 @@ print(prof_props_figure)
 ## Figure S1: Rates per 100,000, faceted by state
 ######################################################
 
+state_rates <- data[data_type=="all"& geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year,sex"]
+state_rates <- rbind(state_rates, new_data[geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year,sex"])
+
+state_rates[, rate:=(deaths/pop)*rate_per]
+
+state_rates_figure <- ggplot(state_rates, aes(x=year, y=rate, group=sex)) +
+  geom_line(aes(color=sex),size=linesize) +
+  facet_wrap(~geog_val, scales="free_y") +
+  scale_x_continuous(breaks=c(2001, 2005, 2010, 2014), minor_breaks=2001:2014) +
+  stat_smooth(method="lm", se=F, color="black") +
+  theme(legend.title=element_blank())+
+  labs(title= "Figure S1",
+       x="Year",
+       y="Rate per 100,000 population")
+
+
+
+
+
+
 state_rates <- data[data_type=="all"& geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year"]
+state_rates <- rbind(state_rates, new_data[geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year"])
+
 state_rates[, rate:=(deaths/pop)*rate_per]
 
 state_rates_figure <- ggplot(state_rates, aes(x=year, y=rate, group=1)) +
   geom_line(size=linesize, color=gg_color_hue(2)[[2]]) +
   facet_wrap(~geog_val, scales="free_y") +
-  scale_x_continuous(breaks=c(2001, 2006, 2010), minor_breaks=c(2002,2003,2004,2005,2007,2008,2009)) +
+  scale_x_continuous(breaks=c(2001, 2005, 2010, 2014), minor_breaks=2001:2014) +
   stat_smooth(method="lm", se=F, color="black") +
   theme(legend.title=element_blank())+
   labs(title= "Figure S1",
@@ -140,6 +207,39 @@ state_rates_figure <- ggplot(state_rates, aes(x=year, y=rate, group=1)) +
        y="Rate per 100,000 population")
 
 print(state_rates_figure)
+
+#regress
+regress_states <- data.table(geog_val=character(),
+                                beta=numeric())
+state_rates[,year_int:= year-2000]
+for (geog in unique(state_rates$geog_val)){
+  print(paste("regressing for", geog))
+    subset <- state_rates[geog_val==geog]
+    subset <- subset[, list(deaths=sum(deaths), pop=sum(pop)), by=c("year", "year_int")]
+    subset[, rate:=deaths/pop * rate_per]
+    out <- lm(rate~year_int, data=subset)
+    beta <- out$coefficients[["year_int"]]
+    regress_states <- rbind(regress_states, list(geog, beta))
+}
+
+regress_states_by_sex <- data.table(geog_val=character(),
+                                    sex=character(),
+                                    beta=numeric())
+
+for (geog in unique(state_rates$geog_val)){
+  print(paste("regressing for", geog))
+  for (sexval in unique(state_rates$sex)){
+    subset <- state_rates[geog_val==geog & sex==sexval]
+    out <- lm(rate~year_int, data=subset)
+    beta <- out$coefficients[["year_int"]]
+    regress_states_by_sex <- rbind(regress_states_by_sex, list(geog, sexval, beta))
+  }
+}
+
+regress_states_by_sex <- dcast.data.table(regress_states_by_sex, geog_val~sex, value.var="beta")
+regress_states_by_sex[, diff:= Male-Female]
+regress_states_by_sex[, abs_diff:= abs(diff)]
+
 
 #####################################################
 ## Figure S2: Proportions by age for 2010, faceted by sex,

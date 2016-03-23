@@ -10,11 +10,12 @@ library(reshape2)
 
 rm(list=ls())
 main_dir <- "C:/Users/abertozz/Documents/work/repos/india_suicide/data/"
+in_dir <- "C:/Users/abertozz/Desktop/"
 
 agenames <- fread(paste0(main_dir, "clean/agenames.csv"))
 
-yearvals <- 2001:2010
-data <- fread(paste0(main_dir, "raw/india_pop.csv"))
+yearvals <- 2001:2014
+data <- fread(paste0(in_dir, "india_pop.csv"))
 
 #drop unneeded years & aggregated sex vals
 data<-data[year %in% yearvals & sex!="both"]
@@ -69,4 +70,4 @@ data[, sex := factor(sex, labels=c("Males", "Females"))]
 pop<-copy(data)
 
 #save
-save(pop, file=paste0(main_dir, "clean/pop.rdata"))
+save(pop, file=paste0(main_dir, "clean/pop_new.rdata"))
