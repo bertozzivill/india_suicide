@@ -21,8 +21,8 @@ source(paste0(main_dir, "../code/multiplot.r"))
 load(paste0(main_dir, "outputs/all_deaths.rdata"))
 
 data[, sex:=factor(sex, labels=c("Male", "Female"))]
+data[geog_status=="ag_status", geog_val:= ifelse(geog_val=="Agricultural", "More Agricultural", "Less Agricultural")]
 data[!geog_status %in% c("national", "state"), geog_val:= paste(geog_val, "States")]
-
 
 rate_per <- 100000
 linesize <- 2
@@ -39,7 +39,7 @@ all_rates <- data[data_type=="all"& geog_status!="state", list(deaths=sum(deaths
 load(paste0(main_dir, "clean/deaths_2011_2014_temp.rdata"))
 loc <- fread(paste0(main_dir, "clean/loc.csv"))
 new_data <- merge(new_data, loc[, list(state, ag_state)], by="state", all.x=T)
-new_data[, ag_status:=ifelse(ag_state==1, "Agricultural", "Non-Agricultural")]
+new_data[, ag_status:=ifelse(ag_state==1, "More Agricultural", "Less Agricultural")]
 
 new_data <- melt(new_data, id.vars=c("year", "sex", "deaths", "pop"), 
             measure.vars=c("national", "dev_status", "ag_status", "state"),
@@ -54,12 +54,14 @@ all_rates <- rbind(all_rates, new_data[geog_status!="state"])
 
 #calculate rates
 all_rates[, rate:=(deaths/pop)*rate_per]
-all_rates$geog_val <- factor(all_rates$geog_val, levels=c("National", "Less Developed States", "More Developed States", "Agricultural States", "Non-Agricultural States"))
+all_rates$geog_val <- factor(all_rates$geog_val, levels=c("National", "Less Developed States", "More Developed States",
+                                                          "Less Agricultural States", "More Agricultural States"))
 
 all_rates_figure <- ggplot(all_rates, aes(x=year, y=rate, group=sex, color=sex))+
             geom_line(size=linesize) +
             facet_grid(~geog_val) +
             scale_x_continuous(breaks=c(seq(2001, 2015, 2), 2014), minor_breaks=seq(2002,2014,2)) +
+            #scale_x_continuous(breaks=c(seq(2001, 2009, 2), 2010), minor_breaks=seq(2002,2010,2)) +
             stat_smooth(method="lm", se=F, color="black") +
             theme(legend.title=element_blank(), 
                   axis.text.x=element_text(angle=45, hjust=1))+
@@ -104,7 +106,8 @@ for (geog in unique(all_rates$geog_val)){
 reason_props <- data[data_type=="causes"& geog_status!="state", list(deaths=sum(deaths)), by="geog_status,geog_val,year,classification"]
 reason_props[, sum_deaths:=sum(deaths), by="geog_val,year"]
 reason_props[, perc:=(deaths/sum_deaths)*100]
-reason_props$geog_val <- factor(reason_props$geog_val, levels=c("National", "Less Developed States", "More Developed States", "Agricultural States", "Non-Agricultural States"))
+reason_props$geog_val <- factor(reason_props$geog_val, levels=c("National", "Less Developed States", "More Developed States",
+                                                                "Less Agricultural States", "More Agricultural States"))
 reason_props[, classification:= factor(classification, levels=c("Personal/Social", "Health", "Economic", "Marriage", "Other", "Unknown"))]
 
 reason_props_figure <- ggplot(reason_props, aes(x=year, y=perc, group=classification, color=classification)) +
@@ -128,7 +131,8 @@ print(reason_props_figure)
 means_props <- data[data_type=="means"& geog_status!="state", list(deaths=sum(deaths)), by="geog_status,geog_val,year,classification"]
 means_props[, sum_deaths:=sum(deaths), by="geog_val,year"]
 means_props[, perc:=(deaths/sum_deaths)*100]
-means_props$geog_val <- factor(means_props$geog_val, levels=c("National", "Less Developed States", "More Developed States", "Agricultural States", "Non-Agricultural States"))
+means_props$geog_val <- factor(means_props$geog_val, levels=c("National", "Less Developed States", "More Developed States",
+                                                              "Less Agricultural States", "More Agricultural States"))
 means_props[, classification:= factor(classification, levels=c("Hanging", "Poison/Overdose", "Jumping", "Drowning", "Self-Immolation", "Other"))]
 
 means_props_figure <- ggplot(means_props, aes(x=year, y=perc, group=classification, color=classification)) +
