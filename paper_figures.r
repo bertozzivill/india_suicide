@@ -25,7 +25,8 @@ data[geog_status=="ag_status", geog_val:= ifelse(geog_val=="Agricultural", "More
 data[!geog_status %in% c("national", "state"), geog_val:= paste(geog_val, "States")]
 
 rate_per <- 100000
-linesize <- 2
+linesize <- 1
+shapesize <- 2.5
 
 pdf(paste0(main_dir, "../writing_and_papers/paper/figures/paper_figs.pdf"), width=14, height=8)
 
@@ -50,19 +51,20 @@ new_data <- new_data[, list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,g
 new_data[!geog_status %in% c("national", "state"), geog_val:= paste(geog_val, "States")]
 new_data[, sex:= gsub("s", "", sex)]
 
-all_rates <- rbind(all_rates, new_data[geog_status!="state"])
+#all_rates <- rbind(all_rates, new_data[geog_status!="state"])
 
 #calculate rates
 all_rates[, rate:=(deaths/pop)*rate_per]
 all_rates$geog_val <- factor(all_rates$geog_val, levels=c("National", "Less Developed States", "More Developed States",
                                                           "Less Agricultural States", "More Agricultural States"))
 
-all_rates_figure <- ggplot(all_rates, aes(x=year, y=rate, group=sex, color=sex))+
+all_rates_figure <- ggplot(all_rates, aes(x=year, y=rate, group=sex))+
             geom_line(size=linesize) +
+            geom_point(aes(shape=sex), size=shapesize)+
             facet_grid(~geog_val) +
-            scale_x_continuous(breaks=c(seq(2001, 2015, 2), 2014), minor_breaks=seq(2002,2014,2)) +
-            #scale_x_continuous(breaks=c(seq(2001, 2009, 2), 2010), minor_breaks=seq(2002,2010,2)) +
-            stat_smooth(method="lm", se=F, color="black") +
+            #scale_x_continuous(breaks=c(seq(2001, 2015, 2), 2014), minor_breaks=seq(2002,2014,2)) +
+            scale_x_continuous(breaks=c(seq(2001, 2009, 2), 2010), minor_breaks=seq(2002,2010,2)) +
+            stat_smooth(method="lm", se=F, color="black", linetype=3) +
             theme(legend.title=element_blank(), 
                   axis.text.x=element_text(angle=45, hjust=1))+
             labs(title= "Figure 1",
@@ -99,6 +101,87 @@ for (geog in unique(all_rates$geog_val)){
 }
 
 #####################################################
+## Figure S1: Rates per 100,000, faceted by state
+######################################################
+
+# state_rates <- data[data_type=="all"& geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year,sex"]
+# #state_rates <- rbind(state_rates, new_data[geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year,sex"])
+# 
+# state_rates[, rate:=(deaths/pop)*rate_per]
+# 
+# state_rates_figure <- ggplot(state_rates, aes(x=year, y=rate, group=sex)) +
+#   geom_line(aes(color=sex),size=linesize) +
+#   facet_wrap(~geog_val, scales="free_y") +
+#   scale_x_continuous(breaks=c(2001, 2005, 2010, 2014), minor_breaks=2001:2014) +
+#   stat_smooth(method="lm", se=F, color="black") +
+#   theme(legend.title=element_blank())+
+#   labs(title= "Figure 2",
+#        x="Year",
+#        y="Rate per 100,000 population")
+
+state_rates <- data[data_type=="all"& geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year"]
+#state_rates <- rbind(state_rates, new_data[geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year"])
+
+state_rates[, rate:=(deaths/pop)*rate_per]
+
+state_rates_figure <- ggplot(state_rates, aes(x=year, y=rate, group=1)) +
+  geom_line(size=2) +
+  facet_wrap(~geog_val, scales="free_y") +
+  scale_x_continuous(breaks=c(seq(2001, 2009,2), 2010), minor_breaks=seq(2002,2010,2)) +
+  stat_smooth(method="lm", se=F, color="black", linetype=3) +
+  theme(legend.title=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(title= "Figure 2",
+       x="Year",
+       y="Rate per 100,000 population")
+
+print(state_rates_figure)
+
+#regress
+regress_states <- data.table(geog_val=character(),
+                             beta=numeric())
+state_rates[,year_int:= year-2000]
+for (geog in unique(state_rates$geog_val)){
+  print(paste("regressing for", geog))
+  subset <- state_rates[geog_val==geog]
+  subset <- subset[, list(deaths=sum(deaths), pop=sum(pop)), by=c("year", "year_int")]
+  subset[, rate:=deaths/pop * rate_per]
+  out <- lm(rate~year_int, data=subset)
+  beta <- out$coefficients[["year_int"]]
+  regress_states <- rbind(regress_states, list(geog, beta))
+}
+
+
+state_rates_sex <- data[data_type=="all"& geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year,sex"]
+state_rates_sex[, rate:=(deaths/pop)*rate_per]
+state_rates_sex[,year_int:= year-2000]
+regress_states_by_sex <- data.table(geog_val=character(),
+                                    sex=character(),
+                                    beta=numeric())
+
+for (geog in unique(state_rates_sex$geog_val)){
+  print(paste("regressing for", geog))
+  for (sexval in unique(state_rates_sex$sex)){
+    subset <- state_rates_sex[geog_val==geog & sex==sexval]
+    out <- lm(rate~year_int, data=subset)
+    beta <- out$coefficients[["year_int"]]
+    regress_states_by_sex <- rbind(regress_states_by_sex, list(geog, sexval, beta))
+  }
+}
+
+regress_states_by_sex <- dcast.data.table(regress_states_by_sex, geog_val~sex, value.var="beta")
+regress_states_by_sex[, diff:= Male-Female]
+regress_states_by_sex[, abs_diff:= abs(diff)]
+
+
+
+
+
+
+
+
+
+
+#####################################################
 ## Figure 2: Proportions, faceted by geography,
 ##            colored by reason
 ######################################################
@@ -110,14 +193,15 @@ reason_props$geog_val <- factor(reason_props$geog_val, levels=c("National", "Les
                                                                 "Less Agricultural States", "More Agricultural States"))
 reason_props[, classification:= factor(classification, levels=c("Personal/Social", "Health", "Economic", "Marriage", "Other", "Unknown"))]
 
-reason_props_figure <- ggplot(reason_props, aes(x=year, y=perc, group=classification, color=classification)) +
+reason_props_figure <- ggplot(reason_props, aes(x=year, y=perc, group=classification)) +
             geom_line(size=linesize) +
+            geom_point(aes(shape=classification), size=shapesize)+
             facet_grid(~geog_val) +
-            scale_color_manual(values=brewer.pal(6, "Set2")) +
+            #scale_color_manual(values=brewer.pal(6, "Set2")) +
             scale_x_continuous(breaks=c(seq(2001, 2009, 2), 2010), minor_breaks=seq(2002,2010,2)) +
             theme(legend.title=element_blank(),
                   axis.text.x=element_text(angle=45, hjust=1))+
-            labs(title= "Figure 2",
+            labs(title= "Figure 3",
                  x="Year",
                  y="Percent of all suicides")
 
@@ -135,18 +219,43 @@ means_props$geog_val <- factor(means_props$geog_val, levels=c("National", "Less 
                                                               "Less Agricultural States", "More Agricultural States"))
 means_props[, classification:= factor(classification, levels=c("Hanging", "Poison/Overdose", "Jumping", "Drowning", "Self-Immolation", "Other"))]
 
-means_props_figure <- ggplot(means_props, aes(x=year, y=perc, group=classification, color=classification)) +
+
+means_props_figure <- ggplot(means_props, aes(x=year, y=perc, group=classification)) +
             geom_line(size=linesize) +
+            geom_point(aes(shape=classification), size=shapesize)+
             facet_grid(~geog_val) +
-            scale_color_manual(values=brewer.pal(6, "Set2")) +
+            #scale_color_manual(values=brewer.pal(6, "Set2")) +
             theme(legend.title=element_blank(),
                   axis.text.x=element_text(angle=45, hjust=1))+
             scale_x_continuous(breaks=c(seq(2001, 2009, 2), 2010), minor_breaks=seq(2002,2010,2)) +
-            labs(title= "Figure 3",
+            labs(title= "Figure 4",
                  x="Year",
                  y="Percent of all suicides")
 
 print(means_props_figure)
+
+#####################################################
+## Figure S2: Proportions by age for 2010, faceted by sex,
+##            colored by means
+######################################################
+
+age_means_props <- data[data_type=="means"& geog_status=="national" & year==2010, list(deaths=sum(deaths)), by="sex,agename,classification"]
+age_means_props[, sum_deaths:=sum(deaths), by="sex,agename"]
+age_means_props[, perc:=(deaths/sum_deaths)*100]
+age_means_props[, classification:= factor(classification, levels=c("Hanging", "Poison/Overdose", "Jumping", "Drowning", "Self-Immolation", "Other"))]
+
+age_means_props_figure <- ggplot(age_means_props, aes(x=agename, y=perc, group=classification)) +
+  geom_line(size=linesize) +
+  geom_point(aes(shape=classification), size=shapesize)+
+  facet_grid(~sex) +
+  #scale_color_manual(values=brewer.pal(6, "Set2")) +
+  theme(legend.title=element_blank())+
+  labs(title= "Figure 5",
+       x="Age group (years)",
+       y="Percent of all suicides")
+
+print(age_means_props_figure)
+
 
 
 #####################################################
@@ -160,111 +269,27 @@ prof_props <- data[data_type=="profession"& geog_status=="national", list(deaths
 prof_props[, sum_deaths:=sum(deaths), by="geog_val,year"]
 prof_props[, perc:=(deaths/sum_deaths)*100]
 
-prof_props_figure <- ggplot(prof_props, aes(x=year, y=perc, group=classification, color=as.character(classification))) +
+prof_props[, classification:= factor(as.character(classification),
+                                     levels=c("Housewife", "SE: Other", "SE: Farm/Agriculture",
+                                              "Other", "Salaried Employee", "Unemployed",
+                                              "SE: Business", "Student", "SE: Professional", "Retired"))]
+
+
+prof_props_figure <- ggplot(prof_props, aes(x=year, y=perc, group=classification, linetype=classification)) +
               geom_line(size=linesize) +
-              scale_color_manual(values=prof_colors) +
+              geom_point(aes(shape=classification), size=shapesize) +
+              scale_linetype_manual(values=c(1,1,1,1,1,1,1,2,3,4))+
+              #scale_color_manual(values=prof_colors) +
               theme(legend.title=element_blank())+
               scale_x_continuous(breaks=c(seq(2001, 2009, 2), 2010), minor_breaks=seq(2002,2010,2)) +
-              labs(title= "Figure 4",
+              labs(title= "Figure 6",
                    x="Year",
                    y="Percent of all suicides")
 print(prof_props_figure)
 
 
-#####################################################
-## Figure S1: Rates per 100,000, faceted by state
-######################################################
+graphics.off()
 
-state_rates <- data[data_type=="all"& geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year,sex"]
-state_rates <- rbind(state_rates, new_data[geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year,sex"])
-
-state_rates[, rate:=(deaths/pop)*rate_per]
-
-state_rates_figure <- ggplot(state_rates, aes(x=year, y=rate, group=sex)) +
-  geom_line(aes(color=sex),size=linesize) +
-  facet_wrap(~geog_val, scales="free_y") +
-  scale_x_continuous(breaks=c(2001, 2005, 2010, 2014), minor_breaks=2001:2014) +
-  stat_smooth(method="lm", se=F, color="black") +
-  theme(legend.title=element_blank())+
-  labs(title= "Figure S1",
-       x="Year",
-       y="Rate per 100,000 population")
-
-
-
-
-
-
-state_rates <- data[data_type=="all"& geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year"]
-state_rates <- rbind(state_rates, new_data[geog_status=="state", list(deaths=sum(deaths), pop=sum(pop)), by="geog_status,geog_val,year"])
-
-state_rates[, rate:=(deaths/pop)*rate_per]
-
-state_rates_figure <- ggplot(state_rates, aes(x=year, y=rate, group=1)) +
-  geom_line(size=linesize, color=gg_color_hue(2)[[2]]) +
-  facet_wrap(~geog_val, scales="free_y") +
-  scale_x_continuous(breaks=c(2001, 2005, 2010, 2014), minor_breaks=2001:2014) +
-  stat_smooth(method="lm", se=F, color="black") +
-  theme(legend.title=element_blank())+
-  labs(title= "Figure S1",
-       x="Year",
-       y="Rate per 100,000 population")
-
-print(state_rates_figure)
-
-#regress
-regress_states <- data.table(geog_val=character(),
-                                beta=numeric())
-state_rates[,year_int:= year-2000]
-for (geog in unique(state_rates$geog_val)){
-  print(paste("regressing for", geog))
-    subset <- state_rates[geog_val==geog]
-    subset <- subset[, list(deaths=sum(deaths), pop=sum(pop)), by=c("year", "year_int")]
-    subset[, rate:=deaths/pop * rate_per]
-    out <- lm(rate~year_int, data=subset)
-    beta <- out$coefficients[["year_int"]]
-    regress_states <- rbind(regress_states, list(geog, beta))
-}
-
-regress_states_by_sex <- data.table(geog_val=character(),
-                                    sex=character(),
-                                    beta=numeric())
-
-for (geog in unique(state_rates$geog_val)){
-  print(paste("regressing for", geog))
-  for (sexval in unique(state_rates$sex)){
-    subset <- state_rates[geog_val==geog & sex==sexval]
-    out <- lm(rate~year_int, data=subset)
-    beta <- out$coefficients[["year_int"]]
-    regress_states_by_sex <- rbind(regress_states_by_sex, list(geog, sexval, beta))
-  }
-}
-
-regress_states_by_sex <- dcast.data.table(regress_states_by_sex, geog_val~sex, value.var="beta")
-regress_states_by_sex[, diff:= Male-Female]
-regress_states_by_sex[, abs_diff:= abs(diff)]
-
-
-#####################################################
-## Figure S2: Proportions by age for 2010, faceted by sex,
-##            colored by means
-######################################################
-
-age_means_props <- data[data_type=="means"& geog_status=="national" & year==2010, list(deaths=sum(deaths)), by="sex,agename,classification"]
-age_means_props[, sum_deaths:=sum(deaths), by="sex,agename"]
-age_means_props[, perc:=(deaths/sum_deaths)*100]
-age_means_props[, classification:= factor(classification, levels=c("Hanging", "Poison/Overdose", "Jumping", "Drowning", "Self-Immolation", "Other"))]
-
-age_means_props_figure <- ggplot(age_means_props, aes(x=agename, y=perc, group=classification, color=classification)) +
-  geom_line(size=linesize) +
-  facet_grid(~sex) +
-  scale_color_manual(values=brewer.pal(6, "Set2")) +
-  theme(legend.title=element_blank())+
-  labs(title= "Figure S2",
-       x="Age group (years)",
-       y="Percent of all suicides")
-
-print(age_means_props_figure)
 
 #####################################################
 ## Figure S3: Professions: proportions by sex
@@ -307,4 +332,3 @@ ag_prof_props_figure <- ggplot(ag_prof_props, aes(x=year, y=perc, group=classifi
 
 print(ag_prof_props_figure)
 
-graphics.off()
